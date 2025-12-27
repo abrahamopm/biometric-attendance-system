@@ -1,0 +1,17 @@
+django
+djangorestframework
+djangorestframework-simplejwt
+django-cors-headers
+django-environ
+psycopg2-binary
+streamlit
+opencv-python
+insightface
+onnxruntime
+numpy
+cryptography
+requests
+python-multipart
+pillow
+pandas
+reportlab
