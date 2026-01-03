@@ -1,5 +1,7 @@
 const API_BASE = (import.meta as any).env?.VITE_API_BASE || 'http://localhost:8000/api';
 
+type RequestOptions = RequestInit & { skipAuth?: boolean };
+
 const ACCESS_KEY = 'access';
 const REFRESH_KEY = 'refresh';
 
@@ -26,13 +28,14 @@ function getAuthHeader() {
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
-async function request(path: string, opts: RequestInit = {}) {
+async function request(path: string, opts: RequestOptions = {}) {
+  const { skipAuth, ...rest } = opts;
   const headers: Record<string,string> = {
-    ...(opts.headers as Record<string,string> || {}),
-    ...getAuthHeader(),
+    ...(rest.headers as Record<string,string> || {}),
+    ...(!skipAuth ? getAuthHeader() : {}),
   };
 
-  const res = await fetch(API_BASE + path, { ...opts, headers });
+  const res = await fetch(API_BASE + path, { ...rest, headers });
   const text = await res.text();
 
   let data: any = null;
@@ -63,6 +66,7 @@ export async function register(payload: { full_name: string; email: string; pass
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
+    skipAuth: true,
   });
 }
 
@@ -71,6 +75,7 @@ export async function login(payload: { email: string; password: string }) {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
+    skipAuth: true,
   });
 }
 

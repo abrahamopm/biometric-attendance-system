@@ -33,7 +33,12 @@ class UserViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(request.user)
         return Response(serializer.data)
 
-    @action(detail=False, methods=['post'], permission_classes=[AllowAny])
+    @action(
+        detail=False,
+        methods=['post'],
+        permission_classes=[AllowAny],
+        authentication_classes=[],
+    )
     def register(self, request):
         serializer = RegisterSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -47,7 +52,12 @@ class UserViewSet(viewsets.ModelViewSet):
             status=status.HTTP_201_CREATED,
         )
 
-    @action(detail=False, methods=['post'], permission_classes=[AllowAny])
+    @action(
+        detail=False,
+        methods=['post'],
+        permission_classes=[AllowAny],
+        authentication_classes=[],
+    )
     def login(self, request):
         serializer = LoginSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
