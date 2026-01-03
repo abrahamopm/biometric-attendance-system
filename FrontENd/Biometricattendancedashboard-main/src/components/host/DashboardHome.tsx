@@ -1,27 +1,36 @@
 import { useState, useRef, useEffect } from 'react';
 import { Video, VideoOff, TrendingUp, Users, Clock, BookOpen, Play, Calendar, CheckCircle } from 'lucide-react';
 import { toast } from 'sonner';
+import api from '../../api';
 
 interface AttendanceRecord {
-  id: string;
+  id: string | number;
   studentName: string;
-  studentId: string;
-  status: 'present' | 'late' | 'absent';
+  studentId?: string | number;
+  status: 'Present' | 'Late' | 'Absent';
   checkInTime: string | null;
   subject: string;
 }
 
-const mockAttendance: AttendanceRecord[] = [
-  { id: '1', studentName: 'Emma Rodriguez', studentId: 'STU001', status: 'present', checkInTime: '09:02', subject: 'CS401' },
-  { id: '2', studentName: 'James Chen', studentId: 'STU002', status: 'present', checkInTime: '09:05', subject: 'CS401' },
-  { id: '3', studentName: 'Sarah Williams', studentId: 'STU003', status: 'late', checkInTime: '09:18', subject: 'CS401' },
-  { id: '4', studentName: 'Michael Brown', studentId: 'STU004', status: 'present', checkInTime: '09:01', subject: 'CS401' },
-  { id: '5', studentName: 'Lisa Anderson', studentId: 'STU005', status: 'absent', checkInTime: null, subject: 'CS401' },
-];
+interface DashboardStats {
+  totalStudents: number;
+  attendanceRate: number;
+  activeSubjects: number;
+  eventsThisWeek: number;
+}
 
 export function DashboardHome() {
   const [cameraActive, setCameraActive] = useState(false);
   const [isScanning, setIsScanning] = useState(false);
+  const [stats, setStats] = useState<DashboardStats>({
+    totalStudents: 0,
+    attendanceRate: 0,
+    activeSubjects: 0,
+    eventsThisWeek: 0,
+  });
+  const [schedule, setSchedule] = useState<{ time: string; subject: string; status: 'ongoing' | 'upcoming' | 'Completed' | 'Ongoing' | 'Scheduled'; title?: string }[]>([]);
+  const [attendanceRecords, setAttendanceRecords] = useState<AttendanceRecord[]>([]);
+  const [loadingMetrics, setLoadingMetrics] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
@@ -34,6 +43,43 @@ export function DashboardHome() {
     }
     return () => stopCamera();
   }, [cameraActive]);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        setLoadingMetrics(true);
+        const data = await api.getDashboardMetrics();
+        if (data?.stats) setStats(data.stats);
+        if (Array.isArray(data?.schedule)) {
+          setSchedule(
+            data.schedule.map((item: any) => ({
+              time: item.time,
+              subject: item.subject,
+              title: item.title,
+              status: item.status === 'Ongoing' ? 'ongoing' : item.status === 'Scheduled' ? 'upcoming' : 'Completed',
+            }))
+          );
+        }
+        if (Array.isArray(data?.recent_attendance)) {
+          setAttendanceRecords(
+            data.recent_attendance.map((rec: any) => ({
+              id: rec.id,
+              studentName: rec.studentName,
+              studentId: rec.studentId,
+              status: rec.status,
+              checkInTime: rec.checkInTime,
+              subject: rec.subject,
+            }))
+          );
+        }
+      } catch (err: any) {
+        const msg = err?.detail || err?.message || 'Failed to load metrics';
+        toast.error(String(msg));
+      } finally {
+        setLoadingMetrics(false);
+      }
+    })();
+  }, []);
 
   const startCamera = async () => {
     try {
@@ -56,17 +102,20 @@ export function DashboardHome() {
   };
 
   const getStatusBadge = (status: AttendanceRecord['status']) => {
+    const key = status.toLowerCase() as 'present' | 'late' | 'absent';
     const styles = {
       present: 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800',
       late: 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800',
       absent: 'bg-rose-100 dark:bg-rose-900/30 text-rose-700 dark:text-rose-400 border-rose-200 dark:border-rose-800',
     };
     return (
-      <span className={`px-3 py-1 rounded-full text-xs border ${styles[status]}`}>
-        {status.charAt(0).toUpperCase() + status.slice(1)}
+      <span className={`px-3 py-1 rounded-full text-xs border ${styles[key]}`}>
+        {status}
       </span>
     );
   };
+
+  const todaysSchedule = schedule;
 
   return (
     <div className="space-y-6 animate-in fade-in">
@@ -87,8 +136,8 @@ export function DashboardHome() {
               <TrendingUp className="w-5 h-5 opacity-75" />
             </div>
             <p className="text-sm opacity-90 mb-1">Total Students</p>
-            <p className="text-3xl">125</p>
-            <p className="text-xs mt-2 opacity-75">+12 this month</p>
+            <p className="text-3xl">{stats.totalStudents}</p>
+            <p className="text-xs mt-2 opacity-75">{loadingMetrics ? 'Loading...' : 'Live from backend'}</p>
           </div>
         </div>
 
@@ -102,8 +151,8 @@ export function DashboardHome() {
               <TrendingUp className="w-5 h-5 opacity-75" />
             </div>
             <p className="text-sm opacity-90 mb-1">Attendance Rate</p>
-            <p className="text-3xl">94.2%</p>
-            <p className="text-xs mt-2 opacity-75">+3.1% from last week</p>
+            <p className="text-3xl">{stats.attendanceRate}%</p>
+            <p className="text-xs mt-2 opacity-75">{loadingMetrics ? 'Loading...' : 'Live from backend'}</p>
           </div>
         </div>
 
@@ -116,8 +165,8 @@ export function DashboardHome() {
               </div>
             </div>
             <p className="text-sm opacity-90 mb-1">Active Subjects</p>
-            <p className="text-3xl">8</p>
-            <p className="text-xs mt-2 opacity-75">3 sessions today</p>
+            <p className="text-3xl">{stats.activeSubjects}</p>
+            <p className="text-xs mt-2 opacity-75">{loadingMetrics ? 'Loading...' : 'Live from backend'}</p>
           </div>
         </div>
 
@@ -130,8 +179,8 @@ export function DashboardHome() {
               </div>
             </div>
             <p className="text-sm opacity-90 mb-1">Events This Week</p>
-            <p className="text-3xl">24</p>
-            <p className="text-xs mt-2 opacity-75">5 upcoming</p>
+            <p className="text-3xl">{stats.eventsThisWeek}</p>
+            <p className="text-xs mt-2 opacity-75">{loadingMetrics ? 'Loading...' : 'Live from backend'}</p>
           </div>
         </div>
       </div>
@@ -207,15 +256,15 @@ export function DashboardHome() {
             <div className="mt-4 grid grid-cols-3 gap-3">
               <div className="bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-lg p-3 text-center">
                 <p className="text-xs text-emerald-600 dark:text-emerald-400 mb-1">Detected</p>
-                <p className="text-2xl text-emerald-700 dark:text-emerald-300">38</p>
+                <p className="text-2xl text-emerald-700 dark:text-emerald-300">0</p>
               </div>
               <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-3 text-center">
                 <p className="text-xs text-amber-600 dark:text-amber-400 mb-1">Unknown</p>
-                <p className="text-2xl text-amber-700 dark:text-amber-300">2</p>
+                <p className="text-2xl text-amber-700 dark:text-amber-300">0</p>
               </div>
               <div className="bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800 rounded-lg p-3 text-center">
                 <p className="text-xs text-indigo-600 dark:text-indigo-400 mb-1">Processing</p>
-                <p className="text-2xl text-indigo-700 dark:text-indigo-300">5</p>
+                <p className="text-2xl text-indigo-700 dark:text-indigo-300">0</p>
               </div>
             </div>
           )}
@@ -225,31 +274,33 @@ export function DashboardHome() {
         <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200 dark:border-slate-800 shadow-lg">
           <h3 className="text-xl text-slate-900 dark:text-white mb-4">Today's Schedule</h3>
           <div className="space-y-3">
-            {[
-              { time: '09:00', subject: 'CS401', status: 'ongoing' },
-              { time: '11:00', subject: 'CS302', status: 'upcoming' },
-              { time: '14:00', subject: 'CS205', status: 'upcoming' },
-            ].map((event, idx) => (
-              <div
-                key={idx}
-                className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 hover:border-indigo-300 dark:hover:border-indigo-600 transition-colors cursor-pointer group"
-              >
-                <div className="p-2 bg-indigo-100 dark:bg-indigo-900/30 rounded-lg group-hover:scale-110 transition-transform">
-                  <Clock className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
-                </div>
-                <div className="flex-1">
-                  <p className="text-sm text-slate-900 dark:text-white">{event.subject}</p>
-                  <p className="text-xs text-slate-600 dark:text-slate-400">{event.time}</p>
-                </div>
-                <span className={`px-2 py-1 rounded-full text-xs ${
-                  event.status === 'ongoing'
-                    ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 status-badge-active'
-                    : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
-                }`}>
-                  {event.status}
-                </span>
+            {todaysSchedule.length === 0 ? (
+              <div className="p-4 text-sm text-slate-600 dark:text-slate-300 bg-slate-50 dark:bg-slate-800 rounded-lg border border-dashed border-slate-200 dark:border-slate-700">
+                {loadingMetrics ? 'Loading schedule...' : 'No events scheduled yet.'}
               </div>
-            ))}
+            ) : (
+              todaysSchedule.map((event, idx) => (
+                <div
+                  key={idx}
+                  className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 hover:border-indigo-300 dark:hover:border-indigo-600 transition-colors cursor-pointer group"
+                >
+                  <div className="p-2 bg-indigo-100 dark:bg-indigo-900/30 rounded-lg group-hover:scale-110 transition-transform">
+                    <Clock className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm text-slate-900 dark:text-white">{event.subject} {event.title ? `- ${event.title}` : ''}</p>
+                    <p className="text-xs text-slate-600 dark:text-slate-400">{event.time}</p>
+                  </div>
+                  <span className={`px-2 py-1 rounded-full text-xs ${
+                    event.status === 'ongoing'
+                      ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 status-badge-active'
+                      : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
+                  }`}>
+                    {event.status}
+                  </span>
+                </div>
+              ))
+            )}
           </div>
         </div>
       </div>
@@ -269,15 +320,23 @@ export function DashboardHome() {
               </tr>
             </thead>
             <tbody>
-              {mockAttendance.map((record) => (
-                <tr key={record.id} className="border-b border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
-                  <td className="py-4 px-4 text-slate-900 dark:text-white">{record.studentName}</td>
-                  <td className="py-4 px-4 text-slate-600 dark:text-slate-400 text-sm">{record.studentId}</td>
-                  <td className="py-4 px-4 text-slate-600 dark:text-slate-400 text-sm">{record.subject}</td>
-                  <td className="py-4 px-4 text-slate-600 dark:text-slate-400 text-sm">{record.checkInTime || '-'}</td>
-                  <td className="py-4 px-4">{getStatusBadge(record.status)}</td>
+              {attendanceRecords.length === 0 ? (
+                <tr className="border-b border-slate-100 dark:border-slate-800">
+                  <td className="py-6 px-4 text-slate-500 dark:text-slate-400 text-sm" colSpan={5}>
+                    {loadingMetrics ? 'Loading attendance...' : 'No attendance records yet.'}
+                  </td>
                 </tr>
-              ))}
+              ) : (
+                attendanceRecords.map((record) => (
+                  <tr key={record.id} className="border-b border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
+                    <td className="py-4 px-4 text-slate-900 dark:text-white">{record.studentName}</td>
+                    <td className="py-4 px-4 text-slate-600 dark:text-slate-400 text-sm">{record.studentId}</td>
+                    <td className="py-4 px-4 text-slate-600 dark:text-slate-400 text-sm">{record.subject}</td>
+                    <td className="py-4 px-4 text-slate-600 dark:text-slate-400 text-sm">{record.checkInTime || '-'}</td>
+                    <td className="py-4 px-4">{getStatusBadge(record.status)}</td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>

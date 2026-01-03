@@ -1,7 +1,15 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 
-from .views import UserViewSet, SubjectViewSet, EventViewSet, EnrollmentViewSet, AttendanceRecordViewSet
+from .views import (
+    UserViewSet,
+    SubjectViewSet,
+    EventViewSet,
+    EnrollmentViewSet,
+    AttendanceRecordViewSet,
+    DashboardMetricsView,
+    ReportsMetricsView,
+)
 
 
 router = DefaultRouter()
@@ -13,4 +21,6 @@ router.register(r'attendances', AttendanceRecordViewSet, basename='attendance')
 
 urlpatterns = [
     path('', include(router.urls)),
+    path('metrics/dashboard/', DashboardMetricsView.as_view(), name='dashboard-metrics'),
+    path('metrics/reports/', ReportsMetricsView.as_view(), name='reports-metrics'),
 ]

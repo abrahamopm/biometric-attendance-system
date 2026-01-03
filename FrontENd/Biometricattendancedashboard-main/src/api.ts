@@ -173,6 +173,14 @@ export async function enrollSubject(subjectId: string | number) {
   });
 }
 
+export async function getDashboardMetrics() {
+  return request('/metrics/dashboard/');
+}
+
+export async function getReportsMetrics(period: 'week' | 'month' | 'semester' = 'week') {
+  return request(`/metrics/reports/?period=${period}`);
+}
+
 export default {
   register,
   login,
@@ -187,4 +195,6 @@ export default {
   startSession,
   listAttendance,
   enrollSubject,
+  getDashboardMetrics,
+  getReportsMetrics,
 };

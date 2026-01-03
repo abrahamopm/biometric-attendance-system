@@ -1,28 +1,57 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { Download, FileText, TrendingUp, Calendar } from 'lucide-react';
+import { toast } from 'sonner';
+import api from '../../api';
 
-const attendanceData = [
-  { date: 'Jan 1', present: 38, late: 3, absent: 1 },
-  { date: 'Jan 2', present: 40, late: 1, absent: 1 },
-  { date: 'Jan 3', present: 35, late: 5, absent: 2 },
-  { date: 'Jan 4', present: 39, late: 2, absent: 1 },
-  { date: 'Jan 5', present: 37, late: 4, absent: 1 },
-];
+interface AttendancePoint {
+  date: string;
+  present: number;
+  late: number;
+  absent: number;
+}
 
-const subjectStats = [
-  { subject: 'CS401', avgAttendance: 92, totalEvents: 12, enrolled: 42 },
-  { subject: 'CS302', avgAttendance: 87, totalEvents: 10, enrolled: 35 },
-  { subject: 'CS205', avgAttendance: 94, totalEvents: 15, enrolled: 48 },
-];
+interface SubjectStat {
+  subject: string;
+  avgAttendance: number;
+  totalEvents: number;
+  enrolled: number;
+}
+
+interface ReportSummary {
+  averageAttendance: number;
+  totalEvents: number;
+  reportsGenerated: number;
+}
 
 export function ReportsView() {
   const [selectedPeriod, setSelectedPeriod] = useState('week');
+  const [summary, setSummary] = useState<ReportSummary>({ averageAttendance: 0, totalEvents: 0, reportsGenerated: 0 });
+  const [attendanceData, setAttendanceData] = useState<AttendancePoint[]>([]);
+  const [subjectStats, setSubjectStats] = useState<SubjectStat[]>([]);
+  const [loading, setLoading] = useState(false);
 
   const handleDownload = (format: 'csv' | 'pdf') => {
     // Simulated download
     alert(`Downloading report as ${format.toUpperCase()}...`);
   };
+
+  useEffect(() => {
+    (async () => {
+      try {
+        setLoading(true);
+        const data = await api.getReportsMetrics(selectedPeriod as 'week' | 'month' | 'semester');
+        if (data?.summary) setSummary(data.summary);
+        if (Array.isArray(data?.attendanceData)) setAttendanceData(data.attendanceData);
+        if (Array.isArray(data?.subjectStats)) setSubjectStats(data.subjectStats);
+      } catch (err: any) {
+        const msg = err?.detail || err?.message || 'Failed to load reports data';
+        toast.error(String(msg));
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, [selectedPeriod]);
 
   return (
     <div>
@@ -66,8 +95,8 @@ export function ReportsView() {
             </div>
             <span className="text-sm text-slate-600">Average Attendance</span>
           </div>
-          <p className="text-3xl text-slate-900 mb-1">91.2%</p>
-          <p className="text-xs text-green-600">+2.4% from last week</p>
+          <p className="text-3xl text-slate-900 mb-1">{summary.averageAttendance}%</p>
+          <p className="text-xs text-green-600">{loading ? 'Loading...' : 'Live from backend'}</p>
         </div>
 
         <div className="bg-white rounded-xl p-6 border border-slate-200">
@@ -77,7 +106,7 @@ export function ReportsView() {
             </div>
             <span className="text-sm text-slate-600">Total Events</span>
           </div>
-          <p className="text-3xl text-slate-900 mb-1">37</p>
+          <p className="text-3xl text-slate-900 mb-1">{summary.totalEvents}</p>
           <p className="text-xs text-slate-600">Across all subjects</p>
         </div>
 
@@ -88,31 +117,39 @@ export function ReportsView() {
             </div>
             <span className="text-sm text-slate-600">Reports Generated</span>
           </div>
-          <p className="text-3xl text-slate-900 mb-1">24</p>
-          <p className="text-xs text-slate-600">This month</p>
+          <p className="text-3xl text-slate-900 mb-1">{summary.reportsGenerated}</p>
+          <p className="text-xs text-slate-600">This period</p>
         </div>
       </div>
 
       <div className="bg-white rounded-xl p-6 border border-slate-200 mb-6">
         <h2 className="text-slate-900 text-xl mb-4">Attendance Trends</h2>
-        <ResponsiveContainer width="100%" height={350}>
-          <BarChart data={attendanceData}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-            <XAxis dataKey="date" stroke="#64748b" />
-            <YAxis stroke="#64748b" />
-            <Tooltip
-              contentStyle={{
-                backgroundColor: '#ffffff',
-                border: '1px solid #e2e8f0',
-                borderRadius: '8px',
-              }}
-            />
-            <Legend />
-            <Bar dataKey="present" fill="#10b981" name="Present" radius={[4, 4, 0, 0]} />
-            <Bar dataKey="late" fill="#f59e0b" name="Late" radius={[4, 4, 0, 0]} />
-            <Bar dataKey="absent" fill="#ef4444" name="Absent" radius={[4, 4, 0, 0]} />
-          </BarChart>
-        </ResponsiveContainer>
+        {loading ? (
+          <div className="p-4 text-sm text-slate-600 border border-dashed border-slate-200 rounded-lg">Loading trend data...</div>
+        ) : attendanceData.length === 0 ? (
+          <div className="p-4 text-sm text-slate-600 border border-dashed border-slate-200 rounded-lg">
+            No attendance trend data yet.
+          </div>
+        ) : (
+          <ResponsiveContainer width="100%" height={350}>
+            <BarChart data={attendanceData}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+              <XAxis dataKey="date" stroke="#64748b" />
+              <YAxis stroke="#64748b" />
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: '#ffffff',
+                  border: '1px solid #e2e8f0',
+                  borderRadius: '8px',
+                }}
+              />
+              <Legend />
+              <Bar dataKey="present" fill="#10b981" name="Present" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="late" fill="#f59e0b" name="Late" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="absent" fill="#ef4444" name="Absent" radius={[4, 4, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        )}
       </div>
 
       <div className="bg-white rounded-xl p-6 border border-slate-200">
@@ -129,32 +166,46 @@ export function ReportsView() {
               </tr>
             </thead>
             <tbody>
-              {subjectStats.map((subject) => (
-                <tr key={subject.subject} className="border-b border-slate-100 hover:bg-slate-50">
-                  <td className="py-4 px-4 text-slate-900">{subject.subject}</td>
-                  <td className="py-4 px-4 text-slate-700">{subject.enrolled}</td>
-                  <td className="py-4 px-4 text-slate-700">{subject.totalEvents}</td>
-                  <td className="py-4 px-4">
-                    <span className={`px-3 py-1 rounded-full text-xs ${
-                      subject.avgAttendance >= 90
-                        ? 'bg-green-100 text-green-700'
-                        : subject.avgAttendance >= 75
-                        ? 'bg-yellow-100 text-yellow-700'
-                        : 'bg-red-100 text-red-700'
-                    }`}>
-                      {subject.avgAttendance}%
-                    </span>
-                  </td>
-                  <td className="py-4 px-4">
-                    <div className="w-full bg-slate-200 rounded-full h-2">
-                      <div
-                        className="bg-blue-600 h-2 rounded-full transition-all"
-                        style={{ width: `${subject.avgAttendance}%` }}
-                      />
-                    </div>
+              {loading ? (
+                <tr className="border-b border-slate-100">
+                  <td className="py-6 px-4 text-slate-600 text-sm" colSpan={5}>
+                    Loading subject performance...
                   </td>
                 </tr>
-              ))}
+              ) : subjectStats.length === 0 ? (
+                <tr className="border-b border-slate-100">
+                  <td className="py-6 px-4 text-slate-600 text-sm" colSpan={5}>
+                    No subject performance data yet.
+                  </td>
+                </tr>
+              ) : (
+                subjectStats.map((subject) => (
+                  <tr key={subject.subject} className="border-b border-slate-100 hover:bg-slate-50">
+                    <td className="py-4 px-4 text-slate-900">{subject.subject}</td>
+                    <td className="py-4 px-4 text-slate-700">{subject.enrolled}</td>
+                    <td className="py-4 px-4 text-slate-700">{subject.totalEvents}</td>
+                    <td className="py-4 px-4">
+                      <span className={`px-3 py-1 rounded-full text-xs ${
+                        subject.avgAttendance >= 90
+                          ? 'bg-green-100 text-green-700'
+                          : subject.avgAttendance >= 75
+                          ? 'bg-yellow-100 text-yellow-700'
+                          : 'bg-red-100 text-red-700'
+                      }`}>
+                        {subject.avgAttendance}%
+                      </span>
+                    </td>
+                    <td className="py-4 px-4">
+                      <div className="w-full bg-slate-200 rounded-full h-2">
+                        <div
+                          className="bg-blue-600 h-2 rounded-full transition-all"
+                          style={{ width: `${subject.avgAttendance}%` }}
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>

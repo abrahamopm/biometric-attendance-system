@@ -1,9 +1,14 @@
 from django.utils import timezone
 from django.contrib.auth import get_user_model
+from datetime import timedelta
+
+from django.db.models import Count, Q
+from django.db.models.functions import TruncDate
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
+from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from .models import Subject, Event, Enrollment, AttendanceRecord
@@ -230,3 +235,137 @@ class AttendanceRecordViewSet(viewsets.ModelViewSet):
         elif user.role == 'Attendee':
             return AttendanceRecord.objects.filter(enrollment__attendee=user)
         return AttendanceRecord.objects.none()
+
+
+class DashboardMetricsView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+        if user.role != 'Host':
+            return Response({"detail": "Host access required"}, status=403)
+
+        subjects = Subject.objects.filter(host=user)
+        events_qs = Event.objects.filter(subject__host=user)
+        enrollments_qs = Enrollment.objects.filter(subject__host=user, is_active=True, is_deleted=False)
+        records_qs = AttendanceRecord.objects.filter(event__subject__host=user)
+
+        today = timezone.localdate()
+        start_week = today - timedelta(days=today.weekday())
+        end_week = start_week + timedelta(days=6)
+
+        total_students = enrollments_qs.values('attendee_id').distinct().count()
+        active_subjects = subjects.count()
+        events_this_week = events_qs.filter(event_date__range=(start_week, end_week)).count()
+
+        total_records = records_qs.count()
+        present_records = records_qs.filter(status__in=['Present', 'Late']).count()
+        attendance_rate = round((present_records / total_records) * 100, 1) if total_records else 0.0
+
+        todays_schedule = [
+            {
+                "id": ev.id,
+                "title": ev.title,
+                "subject": ev.subject.code,
+                "time": ev.start_time.strftime('%H:%M'),
+                "status": ev.status,
+            }
+            for ev in events_qs.filter(event_date=today).order_by('start_time')
+        ]
+
+        recent_attendance = [
+            {
+                "id": rec.id,
+                "studentName": rec.enrollment.attendee.full_name,
+                "studentId": rec.enrollment.attendee_id,
+                "status": rec.status,
+                "checkInTime": rec.timestamp.strftime('%H:%M'),
+                "subject": rec.event.subject.code,
+            }
+            for rec in records_qs.select_related('enrollment__attendee', 'event__subject').order_by('-timestamp')[:10]
+        ]
+
+        return Response({
+            "stats": {
+                "totalStudents": total_students,
+                "attendanceRate": attendance_rate,
+                "activeSubjects": active_subjects,
+                "eventsThisWeek": events_this_week,
+            },
+            "schedule": todays_schedule,
+            "recent_attendance": recent_attendance,
+        })
+
+
+class ReportsMetricsView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+        if user.role != 'Host':
+            return Response({"detail": "Host access required"}, status=403)
+
+        period = request.query_params.get('period', 'week')
+        days_lookup = {
+            'week': 7,
+            'month': 30,
+            'semester': 120,
+        }
+        days = days_lookup.get(period, 7)
+
+        today = timezone.localdate()
+        start_date = today - timedelta(days=days - 1)
+
+        records_qs = AttendanceRecord.objects.filter(
+            event__subject__host=user,
+            timestamp__date__gte=start_date,
+        )
+        events_qs = Event.objects.filter(subject__host=user, event_date__gte=start_date)
+        subjects = Subject.objects.filter(host=user)
+
+        total_records = records_qs.count()
+        present_records = records_qs.filter(status__in=['Present', 'Late']).count()
+        average_attendance = round((present_records / total_records) * 100, 1) if total_records else 0.0
+
+        attendance_data = [
+            {
+                "date": day['day'].strftime('%b %d'),
+                "present": day['present'],
+                "late": day['late'],
+                "absent": day['absent'],
+            }
+            for day in records_qs
+            .annotate(day=TruncDate('timestamp'))
+            .values('day')
+            .annotate(
+                present=Count('id', filter=Q(status='Present')),
+                late=Count('id', filter=Q(status='Late')),
+                absent=Count('id', filter=Q(status='Absent')),
+            )
+            .order_by('day')
+        ]
+
+        subject_stats = []
+        for subj in subjects:
+            subj_records = records_qs.filter(event__subject=subj)
+            subj_total = subj_records.count()
+            subj_present = subj_records.filter(status__in=['Present', 'Late']).count()
+            avg_att = round((subj_present / subj_total) * 100, 1) if subj_total else 0.0
+            enrolled = Enrollment.objects.filter(subject=subj, is_active=True, is_deleted=False).values('attendee_id').distinct().count()
+            total_events = subj.events.filter(event_date__gte=start_date).count()
+            subject_stats.append({
+                "subject": subj.code,
+                "avgAttendance": avg_att,
+                "totalEvents": total_events,
+                "enrolled": enrolled,
+            })
+
+        return Response({
+            "summary": {
+                "averageAttendance": average_attendance,
+                "totalEvents": events_qs.count(),
+                "reportsGenerated": total_records,
+            },
+            "attendanceData": attendance_data,
+            "subjectStats": subject_stats,
+        })
