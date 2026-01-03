@@ -55,7 +55,11 @@ export function FaceEnrollmentCard() {
         )}
       </div>
 
-      <FaceEnrollmentModal isOpen={showModal} onClose={() => setShowModal(false)} />
+      <FaceEnrollmentModal
+        isOpen={showModal}
+        onClose={() => setShowModal(false)}
+        onEnrolled={() => setIsEnrolled(true)}
+      />
     </>
   );
 }

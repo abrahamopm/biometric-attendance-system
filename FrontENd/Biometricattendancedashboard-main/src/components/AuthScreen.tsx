@@ -37,16 +37,22 @@ export function AuthScreen({ onAuth }: AuthScreenProps) {
           localStorage.setItem('access', data.access);
         }
         if (data?.refresh) localStorage.setItem('refresh', data.refresh);
+        
+        // Get user data to determine role
+        const userData = await api.getCurrentUser();
         toast.success('Account created');
-        onAuth(formData.email, formData.name || formData.email);
+        onAuth(formData.email, formData.name || formData.email, userData.role);
       } else {
         const data = await api.login({ email: formData.email, password: formData.password });
         if (data?.access) {
           localStorage.setItem('access', data.access);
         }
         if (data?.refresh) localStorage.setItem('refresh', data.refresh);
+        
+        // Get user data to determine role
+        const userData = await api.getCurrentUser();
         toast.success('Signed in');
-        onAuth(formData.email, formData.name || formData.email);
+        onAuth(formData.email, formData.name || formData.email, userData.role);
       }
     } catch (err: any) {
       const msg = (err && err.detail) || (err && err.message) || 'Authentication failed';

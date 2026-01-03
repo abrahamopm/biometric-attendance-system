@@ -63,6 +63,19 @@ export function EventsView() {
     })();
   };
 
+  const handleStartSession = (id: number) => {
+    (async () => {
+      try {
+        await api.startSession(id);
+        toast.success('Session started');
+        const eventsData = await api.listEvents();
+        setEvents(eventsData || []);
+      } catch (err: any) {
+        toast.error((err && err.message) || 'Start failed');
+      }
+    })();
+  };
+
   const getStatusBadge = (status: Event['status']) => {
     const styles = {
       Scheduled: 'bg-blue-100 text-blue-700 border-blue-200',
@@ -116,10 +129,13 @@ export function EventsView() {
                 </p>
               </div>
               <div className="flex items-center gap-2">
-                {event.status === 'Ongoing' && (
-                  <button className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
+                {event.status === 'Scheduled' && (
+                  <button
+                    onClick={() => handleStartSession(event.id)}
+                    className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                  >
                     <Play className="w-4 h-4" />
-                    Join Live
+                    Start Session
                   </button>
                 )}
                 <button

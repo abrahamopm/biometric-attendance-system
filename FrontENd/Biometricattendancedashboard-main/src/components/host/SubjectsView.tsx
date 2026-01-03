@@ -50,14 +50,20 @@ export function SubjectsView() {
     e.preventDefault();
     (async () => {
       try {
-        await api.createSubject({ name: newSubject.name, code: newSubject.code, description: newSubject.description });
+        if (!newSubject.name.trim() || !newSubject.code.trim()) {
+          toast.error('Name and code are required');
+          return;
+        }
+
+        await api.createSubject({ name: newSubject.name.trim(), code: newSubject.code.trim(), description: newSubject.description });
         toast.success('Subject created');
         setShowCreateModal(false);
         setNewSubject({ name: '', code: '', description: '' });
         const data = await api.listSubjects();
         setSubjects(data || []);
       } catch (err: any) {
-        toast.error((err && err.message) || 'Failed to create subject');
+        const msg = err?.detail || err?.message || (typeof err === 'string' ? err : 'Failed to create subject');
+        toast.error(String(msg));
       }
     })();
   };

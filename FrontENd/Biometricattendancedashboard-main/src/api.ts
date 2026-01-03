@@ -1,7 +1,28 @@
 const API_BASE = (import.meta as any).env?.VITE_API_BASE || 'http://localhost:8000/api';
 
+const ACCESS_KEY = 'access';
+const REFRESH_KEY = 'refresh';
+
+function clearTokens() {
+  localStorage.removeItem(ACCESS_KEY);
+  localStorage.removeItem(REFRESH_KEY);
+}
+
+function getAccessToken(): string | null {
+  const token = localStorage.getItem(ACCESS_KEY);
+  if (!token) return null;
+
+  // Guard against the string values "undefined"/"null" being stored
+  const trimmed = token.trim();
+  if (!trimmed || trimmed === 'undefined' || trimmed === 'null') {
+    clearTokens();
+    return null;
+  }
+  return trimmed;
+}
+
 function getAuthHeader() {
-  const token = localStorage.getItem('access');
+  const token = getAccessToken();
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
@@ -13,13 +34,28 @@ async function request(path: string, opts: RequestInit = {}) {
 
   const res = await fetch(API_BASE + path, { ...opts, headers });
   const text = await res.text();
+
+  let data: any = null;
   try {
-    const data = text ? JSON.parse(text) : null;
-    if (!res.ok) throw data || { status: res.status, message: res.statusText };
-    return data;
-  } catch (e) {
-    throw e;
+    data = text ? JSON.parse(text) : null;
+  } catch (err) {
+    // If response is not JSON, keep raw text for debugging
+    data = { raw: text };
   }
+
+  if (res.status === 401) {
+    const msg = data?.detail || data?.message || text;
+    const tokenError = typeof msg === 'string' && msg.toLowerCase().includes('token not valid');
+    if (tokenError || data?.code === 'token_not_valid') {
+      clearTokens();
+    }
+  }
+
+  if (!res.ok) {
+    throw data || { status: res.status, message: res.statusText };
+  }
+
+  return data;
 }
 
 export async function register(payload: { full_name: string; email: string; password: string; role: string }) {
@@ -36,6 +72,10 @@ export async function login(payload: { email: string; password: string }) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
   });
+}
+
+export async function getCurrentUser() {
+  return request('/users/me/');
 }
 
 export async function enrollFace(formData: FormData) {
@@ -99,6 +139,21 @@ export async function startSession(eventId: string | number) {
   return request(`/events/${eventId}/start_session/`, { method: 'POST' });
 }
 
+export async function markAttendance(eventId: string | number, image: Blob) {
+  const headers = getAuthHeader();
+  const form = new FormData();
+  form.append('image', image);
+  const res = await fetch(API_BASE + `/events/${eventId}/mark_attendance/`, {
+    method: 'POST',
+    headers,
+    body: form,
+  });
+  const text = await res.text();
+  const data = text ? JSON.parse(text) : null;
+  if (!res.ok) throw data || { status: res.status, message: res.statusText };
+  return data;
+}
+
 export async function listAttendance() {
   // router registers "attendances" basename
   try {
@@ -114,13 +169,14 @@ export async function enrollSubject(subjectId: string | number) {
   return request('/enrollments/', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ subject: subjectId }),
+    body: JSON.stringify({ subject_id: subjectId }),
   });
 }
 
 export default {
   register,
   login,
+  getCurrentUser,
   enrollFace,
   listSubjects,
   createSubject,

@@ -46,16 +46,16 @@ This system allows hosts to create events and track attendee attendance through 
 - Redis
 - Git
 
-### Backend Setup
+### Backend Setup (SQLite default)
 1. Navigate to `BackEnd/` directory
-2. Create virtual environment: `python -m venv venv`
-3. Activate: `venv\Scripts\activate` (Windows) or `source venv/bin/activate` (Linux/Mac)
+2. Create virtual environment: `python -m venv .venv`
+3. Activate: `.venv\Scripts\activate` (Windows) or `source .venv/bin/activate` (Linux/Mac)
 4. Install dependencies: `pip install -r requirements.txt`
-5. Configure database in `biometric_attendance_system/settings.py`
-6. Run migrations: `python manage.py migrate`
-7. Start Redis server
-8. Start Celery worker: `celery -A biometric_attendance_system worker --loglevel=info`
-9. Start Django server: `python manage.py runserver`
+5. Apply migrations to create the SQLite database (`db.sqlite3` is created in `BackEnd/` by default): `python manage.py migrate`
+6. Create a superuser (optional but recommended): `python manage.py createsuperuser`
+7. Run the API: `python manage.py runserver 0.0.0.0:8000`
+
+Celery/Redis are optional for local development; the code guards against missing workers. For production, configure PostgreSQL/Redis in `biometric_attendance_system/settings.py` and run a Celery worker: `celery -A biometric_attendance_system worker --loglevel=info`.
 
 ### Frontend Setup
 1. Navigate to `FrontENd/Biometricattendancedashboard-main/` directory

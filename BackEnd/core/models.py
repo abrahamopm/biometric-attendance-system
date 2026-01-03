@@ -23,6 +23,7 @@ class Subject(models.Model):
     host = models.ForeignKey(User, on_delete=models.CASCADE, limit_choices_to={'role': 'Host'})
     name = models.CharField(max_length=255)
     code = models.CharField(max_length=10, unique=True)
+    description = models.TextField(blank=True)
     created_at = models.DateTimeField(default=timezone.now)
 
     def __str__(self):

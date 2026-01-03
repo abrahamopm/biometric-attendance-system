@@ -10,6 +10,8 @@ interface SidebarProps {
   userName: string;
   collapsed: boolean;
   onToggleCollapse: () => void;
+  mobileOpen: boolean;
+  onCloseMobile: () => void;
 }
 
 const navItems: { view: HostView; label: string; icon: any }[] = [
@@ -21,15 +23,24 @@ const navItems: { view: HostView; label: string; icon: any }[] = [
   { view: 'settings', label: 'Settings', icon: Settings },
 ];
 
-export function Sidebar({ currentView, onViewChange, onLogout, userEmail, userName, collapsed, onToggleCollapse }: SidebarProps) {
+export function Sidebar({ currentView, onViewChange, onLogout, userEmail, userName, collapsed, onToggleCollapse, mobileOpen, onCloseMobile }: SidebarProps) {
   const { theme, toggleTheme } = useTheme();
 
   return (
     <aside 
-      className={`fixed left-0 top-0 h-screen bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col shadow-xl transition-all duration-300 z-50 ${
-        collapsed ? 'w-20' : 'w-72'
-      }`}
+      className={`fixed inset-y-0 left-0 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col shadow-xl transition-all duration-300 z-50
+        w-72 ${collapsed ? 'md:w-20' : 'md:w-72'}
+        ${mobileOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0`}
     >
+      {/* Mobile close */}
+      <div className="md:hidden flex items-center justify-end p-4">
+        <button
+          onClick={onCloseMobile}
+          className="px-3 py-2 text-sm rounded-lg bg-slate-900 text-white dark:bg-white dark:text-slate-900 shadow"
+        >
+          Close
+        </button>
+      </div>
       {/* Header */}
       <div className="p-6 border-b border-slate-200 dark:border-slate-800">
         <div className="flex items-center justify-between">
@@ -61,7 +72,10 @@ export function Sidebar({ currentView, onViewChange, onLogout, userEmail, userNa
           return (
             <button
               key={item.view}
-              onClick={() => onViewChange(item.view)}
+              onClick={() => {
+                onViewChange(item.view);
+                onCloseMobile();
+              }}
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all group relative ${
                 isActive
                   ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-lg'

@@ -6,24 +6,34 @@ import api from '../../api';
 interface FaceEnrollmentModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onEnrolled?: () => void;
 }
 
-export function FaceEnrollmentModal({ isOpen, onClose }: FaceEnrollmentModalProps) {
+export function FaceEnrollmentModal({ isOpen, onClose, onEnrolled }: FaceEnrollmentModalProps) {
   const [step, setStep] = useState(1);
   const [cameraActive, setCameraActive] = useState(false);
   const [captureStatus, setCaptureStatus] = useState<'idle' | 'capturing' | 'success'>('idle');
   const [captures, setCaptures] = useState<string[]>([]);
+  const [subjectId, setSubjectId] = useState('');
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
-    if (step === 2 && cameraActive) {
+    // Pre-fill subject from localStorage when modal opens
+    if (isOpen) {
+      const stored = localStorage.getItem('subject_id') || '';
+      setSubjectId(stored);
+    }
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (isOpen && step === 2 && cameraActive) {
       startCamera();
     } else {
       stopCamera();
     }
     return () => stopCamera();
-  }, [step, cameraActive]);
+  }, [step, cameraActive, isOpen]);
 
   const startCamera = async () => {
     try {
@@ -35,6 +45,7 @@ export function FaceEnrollmentModal({ isOpen, onClose }: FaceEnrollmentModalProp
       }
     } catch (error) {
       toast.error('Failed to access camera');
+      setCameraActive(false);
     }
   };
 
@@ -48,6 +59,10 @@ export function FaceEnrollmentModal({ isOpen, onClose }: FaceEnrollmentModalProp
 
   const capturePhoto = () => {
     if (!videoRef.current || !canvasRef.current) return;
+    if (captures.length >= 3) {
+      setStep(3);
+      return;
+    }
 
     setCaptureStatus('capturing');
     const canvas = canvasRef.current;
@@ -58,17 +73,24 @@ export function FaceEnrollmentModal({ isOpen, onClose }: FaceEnrollmentModalProp
     if (ctx) {
       ctx.drawImage(video, 0, 0);
       const imageData = canvas.toDataURL('image/jpeg');
-      setCaptures([...captures, imageData]);
-      
+      setCaptures((prev) => {
+        const next = [...prev, imageData];
+        return next;
+      });
+
       setTimeout(() => {
         setCaptureStatus('success');
         setTimeout(() => {
           setCaptureStatus('idle');
-          if (captures.length >= 2) {
-            setStep(3);
-          }
-        }, 1000);
-      }, 500);
+          setCaptures((prev) => {
+            const next = [...prev];
+            if (next.length >= 3) {
+              setStep(3);
+            }
+            return next;
+          });
+        }, 900);
+      }, 400);
     }
   };
 
@@ -80,15 +102,12 @@ export function FaceEnrollmentModal({ isOpen, onClose }: FaceEnrollmentModalProp
           return;
         }
 
-        // Find subject id from localStorage or ask user
-        let subjectId = localStorage.getItem('subject_id');
-        if (!subjectId) {
-          subjectId = window.prompt('Enter subject id to enroll into (numeric id):');
-        }
-        if (!subjectId) {
+        if (!subjectId.trim()) {
           toast.error('Subject id required to enroll');
           return;
         }
+
+        localStorage.setItem('subject_id', subjectId.trim());
 
         // Convert first capture dataURL to blob and upload
         const dataUrl = captures[0];
@@ -97,10 +116,11 @@ export function FaceEnrollmentModal({ isOpen, onClose }: FaceEnrollmentModalProp
         const file = new File([blob], 'capture.jpg', { type: blob.type });
         const form = new FormData();
         form.append('image', file);
-        form.append('subject_id', String(subjectId));
+        form.append('subject_id', String(subjectId.trim()));
 
         await api.enrollFace(form);
         toast.success('Face enrollment uploaded successfully!');
+        onEnrolled?.();
         onClose();
       } catch (err: any) {
         const msg = (err && err.detail) || (err && err.message) || 'Upload failed';
@@ -125,8 +145,8 @@ export function FaceEnrollmentModal({ isOpen, onClose }: FaceEnrollmentModalProp
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-in fade-in">
-      <div className="bg-white dark:bg-slate-900 rounded-2xl max-w-3xl w-full shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden">
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-start justify-center p-4 z-50 animate-in fade-in overflow-y-auto">
+      <div className="mt-6 bg-white dark:bg-slate-900 rounded-2xl max-w-3xl w-full shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden max-h-[90vh] flex flex-col">
         {/* Header */}
         <div className="relative bg-gradient-to-r from-indigo-500 to-purple-600 p-6 text-white">
           <button
@@ -151,7 +171,7 @@ export function FaceEnrollmentModal({ isOpen, onClose }: FaceEnrollmentModalProp
         </div>
 
         {/* Content */}
-        <div className="p-8">
+        <div className="p-6 md:p-8 overflow-y-auto flex-1 space-y-8">
           {/* Step 1: Guidelines */}
           {step === 1 && (
             <div className="space-y-6">
@@ -196,7 +216,7 @@ export function FaceEnrollmentModal({ isOpen, onClose }: FaceEnrollmentModalProp
 
           {/* Step 2: Capture */}
           {step === 2 && (
-            <div className="space-y-6">
+              <div className="space-y-6">
               <div className="text-center mb-4">
                 <h3 className="text-2xl text-slate-900 dark:text-white mb-2">Capture Your Face</h3>
                 <p className="text-slate-600 dark:text-slate-400">
@@ -204,7 +224,7 @@ export function FaceEnrollmentModal({ isOpen, onClose }: FaceEnrollmentModalProp
                 </p>
               </div>
 
-              <div className="relative bg-slate-900 rounded-xl overflow-hidden aspect-video">
+              <div className="relative bg-slate-900 rounded-xl overflow-hidden aspect-video min-h-[260px]">
                 <video
                   ref={videoRef}
                   autoPlay
@@ -240,7 +260,7 @@ export function FaceEnrollmentModal({ isOpen, onClose }: FaceEnrollmentModalProp
 
               {/* Captured Photos Preview */}
               {captures.length > 0 && (
-                <div className="flex gap-3 justify-center">
+                <div className="flex gap-3 justify-center flex-wrap">
                   {captures.map((capture, idx) => (
                     <div key={idx} className="relative">
                       <img src={capture} alt={`Capture ${idx + 1}`} className="w-20 h-20 rounded-lg object-cover border-2 border-emerald-500" />
@@ -250,7 +270,7 @@ export function FaceEnrollmentModal({ isOpen, onClose }: FaceEnrollmentModalProp
                 </div>
               )}
 
-              <div className="flex gap-3">
+              <div className="flex gap-3 flex-wrap">
                 <button
                   onClick={() => {
                     setStep(1);
@@ -264,7 +284,7 @@ export function FaceEnrollmentModal({ isOpen, onClose }: FaceEnrollmentModalProp
                 <button
                   onClick={capturePhoto}
                   disabled={captureStatus !== 'idle'}
-                  className="flex-1 px-6 py-3 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-xl hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex-1 min-w-[180px] px-6 py-3 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-xl hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {captures.length >= 2 ? 'Capture Final Photo' : `Capture Photo ${captures.length + 1}`}
                 </button>
@@ -273,7 +293,7 @@ export function FaceEnrollmentModal({ isOpen, onClose }: FaceEnrollmentModalProp
           )}
 
           {/* Step 3: Confirmation */}
-          {step === 3 && (
+              {step === 3 && (
             <div className="space-y-6">
               <div className="text-center">
                 <div className="w-20 h-20 bg-emerald-100 dark:bg-emerald-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -286,6 +306,17 @@ export function FaceEnrollmentModal({ isOpen, onClose }: FaceEnrollmentModalProp
               </div>
 
               <div className="grid grid-cols-3 gap-4">
+              <div>
+                <label className="block text-sm text-slate-700 dark:text-slate-300 mb-2">Subject ID</label>
+                <input
+                  value={subjectId}
+                  onChange={(e) => setSubjectId(e.target.value)}
+                  className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-slate-900 dark:text-white"
+                  placeholder="Enter the subject ID to enroll"
+                  required
+                />
+              </div>
+
                 {captures.map((capture, idx) => (
                   <div key={idx} className="relative group">
                     <img src={capture} alt={`Capture ${idx + 1}`} className="w-full aspect-square rounded-xl object-cover border-2 border-slate-200 dark:border-slate-700" />

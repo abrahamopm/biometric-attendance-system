@@ -1,13 +1,12 @@
 import { useState } from 'react';
 import { HostDashboard } from './components/HostDashboard';
 import { AttendeeDashboard } from './components/AttendeeDashboard';
-import { LoginScreen } from './components/LoginScreen';
 import { AuthScreen } from './components/AuthScreen';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { Toaster } from 'sonner';
 import { AIChat } from './components/AIChat';
 
-export type UserRole = 'host' | 'attendee' | null;
+export type UserRole = 'Host' | 'Attendee' | null;
 
 export default function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -15,14 +14,13 @@ export default function App() {
   const [userEmail, setUserEmail] = useState('');
   const [userRole, setUserRole] = useState<UserRole>(null);
 
-  const handleAuth = (email: string, name: string) => {
+  const handleAuth = (email: string, name: string, role?: string) => {
     setUserEmail(email);
     setUserName(name);
     setIsAuthenticated(true);
-  };
-
-  const handleLogin = (role: UserRole, id: string) => {
-    setUserRole(role);
+    if (role) {
+      setUserRole(role as UserRole);
+    }
   };
 
   const handleLogout = () => {
@@ -42,19 +40,11 @@ export default function App() {
         </>
       )}
 
-      {/* Show role selection if authenticated but no role selected */}
-      {isAuthenticated && !userRole && (
-        <>
-          <LoginScreen onLogin={handleLogin} userName={userName} userEmail={userEmail} />
-          <Toaster position="top-right" richColors />
-        </>
-      )}
-
       {/* Show dashboard based on role */}
       {isAuthenticated && userRole && (
         <>
           <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
-            {userRole === 'host' ? (
+            {userRole === 'Host' ? (
               <HostDashboard userId={userEmail} userName={userName} onLogout={handleLogout} />
             ) : (
               <AttendeeDashboard userId={userEmail} userName={userName} onLogout={handleLogout} />

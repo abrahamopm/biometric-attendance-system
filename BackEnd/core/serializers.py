@@ -53,8 +53,8 @@ class LoginSerializer(serializers.Serializer):
 class SubjectSerializer(serializers.ModelSerializer):
     class Meta:
         model = Subject
-        fields = ['id', 'name', 'code', 'host', 'created_at']
-        read_only_fields = ['id', 'created_at']
+        fields = ['id', 'name', 'code', 'description', 'host', 'created_at']
+        read_only_fields = ['id', 'created_at', 'host']
 
 
 class EventSerializer(serializers.ModelSerializer):
@@ -70,14 +70,41 @@ class EventSerializer(serializers.ModelSerializer):
 class EnrollmentSerializer(serializers.ModelSerializer):
     attendee_name = serializers.CharField(source='attendee.full_name', read_only=True)
     subject_name = serializers.CharField(source='subject.name', read_only=True)
+    subject_id = serializers.IntegerField(write_only=True, required=False)
 
     class Meta:
         model = Enrollment
         fields = [
             'id', 'subject', 'subject_name', 'attendee', 'attendee_name',
-            'facial_embedding', 'enrolled_at', 'is_active', 'is_deleted'
+            'subject_id', 'facial_embedding', 'enrolled_at', 'is_active', 'is_deleted'
         ]
-        read_only_fields = ['id', 'facial_embedding', 'enrolled_at']
+        read_only_fields = ['id', 'facial_embedding', 'enrolled_at', 'attendee']
+
+    def create(self, validated_data):
+        # Support subject lookup by "subject_id" or nested subject
+        subject = validated_data.pop('subject', None)
+        subject_id = validated_data.pop('subject_id', None)
+        if not subject and subject_id:
+            subject = Subject.objects.get(id=subject_id)
+
+        request = self.context.get('request')
+        attendee = request.user if request else None
+
+        if not subject:
+            raise serializers.ValidationError({'subject': 'Subject is required'})
+        if not attendee:
+            raise serializers.ValidationError({'attendee': 'Authentication required'})
+
+        enrollment, _ = Enrollment.objects.update_or_create(
+            subject=subject,
+            attendee=attendee,
+            defaults={
+                'facial_embedding': validated_data.get('facial_embedding'),
+                'is_active': validated_data.get('is_active', True),
+                'is_deleted': validated_data.get('is_deleted', False),
+            }
+        )
+        return enrollment
 
 
 class AttendanceRecordSerializer(serializers.ModelSerializer):

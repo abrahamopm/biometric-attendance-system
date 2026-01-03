@@ -23,6 +23,11 @@ class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
 
+    @action(detail=False, methods=['get'], permission_classes=[IsAuthenticated])
+    def me(self, request):
+        serializer = self.get_serializer(request.user)
+        return Response(serializer.data)
+
     @action(detail=False, methods=['post'], permission_classes=[AllowAny])
     def register(self, request):
         serializer = RegisterSerializer(data=request.data)
@@ -54,18 +59,31 @@ class UserViewSet(viewsets.ModelViewSet):
 
 
 class SubjectViewSet(viewsets.ModelViewSet):
-    queryset = Subject.objects.all()
     serializer_class = SubjectSerializer
     permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        user = self.request.user
+        if user.role == 'Host':
+            return Subject.objects.filter(host=user)
+        # Allow attendees to browse available subjects
+        return Subject.objects.all()
 
     def perform_create(self, serializer):
         serializer.save(host=self.request.user)
 
 
 class EventViewSet(viewsets.ModelViewSet):
-    queryset = Event.objects.all()
     serializer_class = EventSerializer
     permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        user = self.request.user
+        if user.role == 'Host':
+            return Event.objects.filter(subject__host=user)
+        elif user.role == 'Attendee':
+            return Event.objects.filter(subject__enrollments__attendee=user)
+        return Event.objects.none()
 
     @action(detail=True, methods=['post'])
     def start_session(self, request, pk=None):
@@ -85,23 +103,99 @@ class EventViewSet(viewsets.ModelViewSet):
 
         return Response({"message": "Session started"})
 
+    @action(detail=True, methods=['post'])
+    def mark_attendance(self, request, pk=None):
+        """Upload a frame for an ongoing event and mark attendance."""
+        event = self.get_object()
+        if event.status != 'Ongoing':
+            return Response({"error": "Session not active"}, status=400)
+
+        image = request.FILES.get('image')
+        if not image:
+            return Response({"error": "Image required"}, status=400)
+
+        try:
+            embedding = extract_embedding(image)
+            enrollments = Enrollment.objects.filter(
+                subject=event.subject, is_active=True, is_deleted=False
+            )
+
+            best_match = None
+            best_sim = 0.0
+
+            for enr in enrollments:
+                if not enr.facial_embedding:
+                    continue
+                match, sim = compare_embeddings(embedding, enr.facial_embedding)
+                if match and sim > best_sim:
+                    best_sim = sim
+                    best_match = enr
+
+            if best_match:
+                time_diff = (timezone.now() - event.started_at).total_seconds() / 60
+                status_val = 'Late' if time_diff > event.late_threshold else 'Present'
+
+                record, _ = AttendanceRecord.objects.get_or_create(
+                    event=event,
+                    enrollment=best_match,
+                    defaults={
+                        'status': status_val,
+                        'timestamp': timezone.now(),
+                        'is_manual': False
+                    }
+                )
+                return Response({
+                    "success": True,
+                    "student": best_match.attendee.full_name,
+                    "status": status_val,
+                    "confidence": round(best_sim * 100, 2),
+                    "record_id": record.id
+                })
+            return Response({"success": False, "message": "No match"}, status=200)
+
+        except ValueError as ve:
+            return Response({"error": str(ve)}, status=400)
+        except Exception:
+            return Response({"error": "Recognition failed"}, status=500)
+
+    @action(detail=True, methods=['get'])
+    def export_csv(self, request, pk=None):
+        event = self.get_object()
+        records = event.records.all()
+        return Response(AttendanceRecordSerializer(records, many=True).data)
+
 
 class EnrollmentViewSet(viewsets.ModelViewSet):
-    queryset = Enrollment.objects.all()
     serializer_class = EnrollmentSerializer
     permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        user = self.request.user
+        if user.role == 'Host':
+            return Enrollment.objects.filter(subject__host=user)
+        elif user.role == 'Attendee':
+            return Enrollment.objects.filter(attendee=user)
+        return Enrollment.objects.none()
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        enrollment = serializer.save()
+        return Response(EnrollmentSerializer(enrollment).data, status=status.HTTP_201_CREATED)
 
     @action(detail=False, methods=['post'])
     def enroll(self, request):
         subject_id = request.data.get('subject_id')
         image = request.FILES.get('image')
 
-        if not subject_id or not image:
-            return Response({"error": "subject_id and image required"}, status=400)
+        if not subject_id:
+            return Response({"error": "subject_id required"}, status=400)
 
         try:
             subject = Subject.objects.get(id=subject_id)
-            embedding = extract_embedding(image)
+            embedding = None
+            if image:
+                embedding = extract_embedding(image)
 
             enrollment, _ = Enrollment.objects.update_or_create(
                 subject=subject,
@@ -126,65 +220,13 @@ class EnrollmentViewSet(viewsets.ModelViewSet):
 
 
 class AttendanceRecordViewSet(viewsets.ModelViewSet):
-    queryset = AttendanceRecord.objects.all()
     serializer_class = AttendanceRecordSerializer
     permission_classes = [IsAuthenticated]
 
-    @action(detail=True, methods=['post'])
-    def mark_attendance(self, request, pk=None):
-        """Main attendance endpoint - upload camera frame"""
-        event = Event.objects.get(pk=pk)
-        if event.status != 'Ongoing':
-            return Response({"error": "Session not active"}, status=400)
-
-        image = request.FILES.get('image')
-        if not image:
-            return Response({"error": "Image required"}, status=400)
-
-        try:
-            embedding = extract_embedding(image)
-            enrollments = Enrollment.objects.filter(
-                subject=event.subject, is_active=True, is_deleted=False
-            )
-
-            best_match = None
-            best_sim = 0.0
-
-            for enr in enrollments:
-                match, sim = compare_embeddings(embedding, enr.facial_embedding)
-                if match and sim > best_sim:
-                    best_sim = sim
-                    best_match = enr
-
-            if best_match:
-                time_diff = (timezone.now() - event.started_at).total_seconds() / 60
-                status = 'Late' if time_diff > event.late_threshold else 'Present'
-
-                record, _ = AttendanceRecord.objects.get_or_create(
-                    event=event,
-                    enrollment=best_match,
-                    defaults={
-                        'status': status,
-                        'timestamp': timezone.now(),
-                        'is_manual': False
-                    }
-                )
-                return Response({
-                    "success": True,
-                    "student": best_match.attendee.full_name,
-                    "status": status,
-                    "confidence": round(best_sim * 100, 2),
-                    "record_id": record.id
-                })
-            return Response({"success": False, "message": "No match"}, status=200)
-
-        except ValueError as ve:
-            return Response({"error": str(ve)}, status=400)
-        except Exception:
-            return Response({"error": "Recognition failed"}, status=500)
-
-    @action(detail=True, methods=['get'])
-    def export_csv(self, request, pk=None):
-        event = Event.objects.get(pk=pk)
-        records = event.records.all()
-        return Response(AttendanceRecordSerializer(records, many=True).data)
+    def get_queryset(self):
+        user = self.request.user
+        if user.role == 'Host':
+            return AttendanceRecord.objects.filter(event__subject__host=user)
+        elif user.role == 'Attendee':
+            return AttendanceRecord.objects.filter(enrollment__attendee=user)
+        return AttendanceRecord.objects.none()
