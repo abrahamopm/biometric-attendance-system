@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Layout from './components/Layout.jsx';
+import LandingPage from './pages/LandingPage';
 import Login from './pages/auth/Login.jsx';
 import Signup from './pages/auth/Signup.jsx';
 // import VerifyEmail from './pages/auth/VerifyEmail.jsx'; // COMMENTED OUT - Email verification disabled
@@ -50,13 +51,13 @@ const AppRoutes = () => {
         <Router>
             <Routes>
                 {/* Public routes - no layout */}
+                <Route path="/" element={<LandingPage />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/signup" element={<Signup />} />
                 {/* <Route path="/verify-email" element={<VerifyEmail />} /> */} {/* COMMENTED OUT - Email verification disabled */}
 
                 {/* Protected routes - with layout */}
-                <Route path="/" element={<Layout />}>
-                    <Route index element={<Navigate to="/login" replace />} />
+                <Route element={<Layout />}>
 
                     {/* Student Routes */}
                     <Route

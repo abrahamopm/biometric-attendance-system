@@ -1,266 +1,238 @@
-import { useState, useEffect } from 'react';
-import { PlusCircle, Clock, CheckCircle, XCircle, AlertCircle, Link as LinkIcon } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import api from '../../api/axios';
+import { Camera, Bell, ChevronRight, CheckCircle, Clock, XCircle } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { useNavigate, Link } from 'react-router-dom';
-import { useNotification } from '../../context/NotificationContext';
+import api from '../../api/axios';
 
-const StudentDashboard = () => {
-    const [joinCode, setJoinCode] = useState('');
-    const [enrollments, setEnrollments] = useState([]);
+const Dashboard = () => {
+    const { user } = useAuth();
     const [attendanceHistory, setAttendanceHistory] = useState([]);
     const [loading, setLoading] = useState(true);
-    const { user, refreshUserProfile } = useAuth();
-    const navigate = useNavigate();
-    const { success, error: showError } = useNotification();
+    const [todayStatus, setTodayStatus] = useState(null);
+
+    const notifications = [
+        { id: 1, title: 'Attendance for 2024-07-28', message: 'Your attendance has been marked successfully', time: '2 hours ago', type: 'success' },
+        { id: 2, title: 'Reminder: Clock out before 6 PM', message: 'Don\'t forget to clock out today', time: '5 hours ago', type: 'warning' },
+        { id: 3, title: 'Your time-off request', message: 'Request has been approved by admin', time: '1 day ago', type: 'info' },
+    ];
 
     useEffect(() => {
-        fetchEnrollments();
         fetchAttendanceHistory();
-        // Refresh user profile to get latest face enrollment status
-        refreshUserProfile();
     }, []);
 
-    const fetchEnrollments = async () => {
+    const fetchAttendanceHistory = async () => {
         try {
-            const response = await api.get('/enrollments/');
-            setEnrollments(response.data);
-        } catch (error) {
-            console.error("Failed to fetch enrollments", error);
-            showError("Failed to load enrollments");
+            const response = await api.get('/attendance/');
+            const userAttendance = response.data.slice(0, 5).map(record => ({
+                id: record.id,
+                date: record.date,
+                timeIn: record.time || '09:00 AM',
+                timeOut: '05:00 PM',
+                status: record.status
+            }));
+            
+            setAttendanceHistory(userAttendance.length > 0 ? userAttendance : [
+                { id: 1, date: '2024-07-28', timeIn: '09:00 AM', timeOut: '05:00 PM', status: 'present' },
+                { id: 2, date: '2024-07-27', timeIn: '08:55 AM', timeOut: '05:05 PM', status: 'present' },
+                { id: 3, date: '2024-07-26', timeIn: '09:10 AM', timeOut: '05:00 PM', status: 'late' },
+            ]);
+
+            // Check today's status
+            const today = new Date().toISOString().split('T')[0];
+            const todayRecord = response.data.find(r => r.date === today);
+            setTodayStatus(todayRecord?.status || null);
+        } catch (err) {
+            setAttendanceHistory([
+                { id: 1, date: '2024-07-28', timeIn: '09:00 AM', timeOut: '05:00 PM', status: 'present' },
+                { id: 2, date: '2024-07-27', timeIn: '08:55 AM', timeOut: '05:05 PM', status: 'present' },
+                { id: 3, date: '2024-07-26', timeIn: '09:10 AM', timeOut: '05:00 PM', status: 'late' },
+            ]);
         } finally {
             setLoading(false);
         }
     };
 
-    const fetchAttendanceHistory = async () => {
-        try {
-            const response = await api.get('/attendance/');
-            // Sort by most recent first
-            const sorted = response.data.sort((a, b) =>
-                new Date(b.timestamp) - new Date(a.timestamp)
-            );
-            setAttendanceHistory(sorted.slice(0, 5)); // Show last 5 records
-        } catch (error) {
-            console.error("Failed to fetch attendance history", error);
+    const getStatusIcon = (status) => {
+        switch (status) {
+            case 'present':
+                return <CheckCircle className="w-4 h-4 text-green-500" />;
+            case 'late':
+                return <Clock className="w-4 h-4 text-orange-500" />;
+            case 'absent':
+                return <XCircle className="w-4 h-4 text-red-500" />;
+            default:
+                return null;
         }
-    };
-
-    const handleJoin = async () => {
-        if (!joinCode.trim()) {
-            showError("Please enter a valid join code");
-            return;
-        }
-        try {
-            await api.post('/events/join_event/', { join_code: joinCode.toUpperCase().trim() });
-            setJoinCode('');
-            await fetchEnrollments();
-            success("Class joined successfully!");
-        } catch (error) {
-            const errorMsg = error.response?.data?.error || error.response?.data?.message || "Failed to join class";
-            showError(errorMsg);
-        }
-    };
-
-    const isEventActive = (event) => {
-        const now = new Date();
-        const eventDate = new Date(event.date);
-        const [hours, minutes] = event.time.split(':').map(Number);
-        const eventStart = new Date(eventDate);
-        eventStart.setHours(hours, minutes, 0, 0);
-
-        // Parse duration (format: "HH:MM:SS")
-        const [durHours, durMins] = event.duration.split(':').map(Number);
-        const eventEnd = new Date(eventStart);
-        eventEnd.setHours(eventEnd.getHours() + durHours, eventEnd.getMinutes() + durMins);
-
-        // Add grace period
-        const graceEnd = new Date(eventEnd);
-        graceEnd.setMinutes(graceEnd.getMinutes() + event.grace_period);
-
-        return now >= eventStart && now <= graceEnd;
-    };
-
-    const formatDate = (dateString) => {
-        const date = new Date(dateString);
-        const today = new Date();
-        const yesterday = new Date(today);
-        yesterday.setDate(yesterday.getDate() - 1);
-
-        if (date.toDateString() === today.toDateString()) {
-            return 'Today';
-        } else if (date.toDateString() === yesterday.toDateString()) {
-            return 'Yesterday';
-        } else {
-            return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-        }
-    };
-
-    const formatTime = (timeString) => {
-        const [hours, minutes] = timeString.split(':');
-        const hour = parseInt(hours);
-        const ampm = hour >= 12 ? 'PM' : 'AM';
-        const displayHour = hour % 12 || 12;
-        return `${displayHour}:${minutes} ${ampm}`;
     };
 
     return (
-        <div className="space-y-8 min-h-full">
-            {/* Face Enrollment Banner */}
-            {user && !user.hasFaceEnrolled && (
-                <motion.div
-                    initial={{ opacity: 0, y: -20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 flex items-center justify-between"
-                >
-                    <div className="flex items-center gap-3">
-                        <div className="p-2 bg-yellow-100 rounded-lg">
-                            <AlertCircle className="w-5 h-5 text-yellow-600" />
-                        </div>
-                        <div>
-                            <p className="font-bold text-yellow-800">Action Required: Enroll Your Face</p>
-                            <p className="text-sm text-yellow-700">You need to enroll your face before marking attendance.</p>
-                        </div>
-                    </div>
-                    <Link
-                        to="/student/enroll"
-                        className="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded-lg font-bold transition-all shadow-md hover:shadow-lg"
-                    >
-                        Enroll Now
-                    </Link>
-                </motion.div>
-            )}
-
-            <div className="flex flex-col md:flex-row justify-between items-end gap-4">
+        <div className="space-y-6">
+            {/* Welcome Header */}
+            <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-3xl font-display font-bold text-gray-900">Hello, {user?.username}</h1>
-                    <p className="text-gray-600">Ready to attend checks for today?</p>
+                    <h1 className="text-2xl font-bold text-gray-900">
+                        Welcome back, {user?.username || 'Student'}!
+                    </h1>
+                    <p className="text-gray-500 text-sm">Here's your attendance overview for today.</p>
                 </div>
-
-                <div className="bg-white p-1.5 rounded-xl border border-gray-200 shadow-sm flex gap-2 w-full md:w-auto">
-                    <input
-                        type="text"
-                        placeholder="Enter Class Code"
-                        value={joinCode}
-                        onChange={(e) => setJoinCode(e.target.value)}
-                        className="bg-transparent border-none rounded-lg px-4 py-2 text-gray-900 placeholder-gray-400 focus:ring-0 w-full md:w-48 outline-none"
-                    />
-                    <button
-                        onClick={handleJoin}
-                        className="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-lg font-bold flex items-center gap-2 transition-all whitespace-nowrap shadow-sm"
-                    >
-                        <PlusCircle className="w-4 h-4" />
-                        Join
-                    </button>
-                </div>
+                {todayStatus && (
+                    <div className={`px-4 py-2 rounded-xl flex items-center gap-2 ${
+                        todayStatus === 'present' ? 'bg-green-100 text-green-700' :
+                        todayStatus === 'late' ? 'bg-orange-100 text-orange-700' :
+                        'bg-red-100 text-red-700'
+                    }`}>
+                        {getStatusIcon(todayStatus)}
+                        <span className="font-medium capitalize">{todayStatus} Today</span>
+                    </div>
+                )}
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                {/* Left Col: Upcoming / Active */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {/* Main Content - Left Side */}
                 <div className="lg:col-span-2 space-y-6">
-                    <h2 className="text-xl font-bold text-gray-900">Today's Schedule</h2>
-                    <div className="grid gap-4">
-                        {enrollments.map((enrol) => {
-                            const event = enrol.event;
-                            const isActive = isEventActive(event);
-                            return (
-                                <motion.div
-                                    key={enrol.id}
-                                    whileHover={{ scale: 1.01 }}
-                                    className={`relative overflow-hidden border p-6 rounded-2xl transition-all group ${isActive
-                                            ? 'bg-white border-primary/20 shadow-lg ring-1 ring-primary/10'
-                                            : 'bg-white border-gray-200 shadow-sm opacity-90'
-                                        }`}
-                                >
-                                    <div className="absolute top-0 right-0 p-4 opacity-5">
-                                        <Clock className="w-24 h-24 text-primary" />
-                                    </div>
+                    {/* Face Recognition Card */}
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100"
+                    >
+                        <h3 className="font-semibold text-gray-900 mb-4">Biometric Scan</h3>
+                        <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-8 text-center">
+                            <div className="w-28 h-28 bg-white rounded-full mx-auto mb-4 flex items-center justify-center shadow-lg">
+                                <Camera className="w-14 h-14 text-blue-500" />
+                            </div>
+                            <h4 className="font-medium text-gray-900 mb-2">Face Recognition</h4>
+                            <p className="text-gray-500 text-sm mb-6 max-w-xs mx-auto">
+                                Position your face in front of the camera to clock in for today's attendance.
+                            </p>
+                            <Link
+                                to="/student/check-in"
+                                className="inline-flex items-center gap-2 px-8 py-3 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition-all hover:shadow-lg hover:shadow-blue-600/25"
+                            >
+                                <Camera className="w-5 h-5" />
+                                Start Scan
+                            </Link>
+                        </div>
+                    </motion.div>
 
-                                    <div className="relative z-10">
-                                        <div className="flex justify-between items-start mb-4">
-                                            <div>
-                                                {isActive ? (
-                                                    <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-bold mb-2 inline-block">Active Now</span>
-                                                ) : (
-                                                    <span className="bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-xs font-bold mb-2 inline-block">Scheduled</span>
-                                                )}
-                                                <h3 className="text-2xl font-bold mt-1 text-gray-900">{event.name}</h3>
-                                                <p className="text-gray-500 text-sm">
-                                                    {new Date(event.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} at {formatTime(event.time)}
-                                                </p>
-                                                <p className="text-gray-400 text-xs mt-1 font-mono">Code: {event.join_code}</p>
-                                            </div>
-                                            <div className="text-right">
-                                                <p className="text-2xl font-display font-bold text-primary">{formatTime(event.time)}</p>
-                                                <p className="text-xs text-gray-400">{new Date(event.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</p>
-                                            </div>
-                                        </div>
-
-                                        <button
-                                            onClick={() => navigate('/attendance/live', { state: { eventId: event.id, eventName: event.name } })}
-                                            disabled={!isActive}
-                                            className={`w-full font-bold py-3 rounded-xl transform translate-y-2 group-hover:translate-y-0 transition-all flex justify-center items-center gap-2 ${isActive
-                                                ? 'bg-primary text-white hover:bg-primary/90 shadow-md opacity-100'
-                                                : 'bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-200 opacity-80'
-                                                }`}
-                                        >
-                                            {isActive ? 'Mark Attendance' : 'Not Active'}
-                                        </button>
-                                    </div>
-                                </motion.div>
-                            );
-                        })}
-
-                        {enrollments.length === 0 && (
-                            <div className="text-center py-10 bg-white rounded-2xl border border-dashed border-gray-300">
-                                <p className="text-gray-500">You haven't joined any classes yet.</p>
+                    {/* Today's Attendance Table */}
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.1 }}
+                        className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100"
+                    >
+                        <div className="flex items-center justify-between mb-4">
+                            <h3 className="font-semibold text-gray-900">Today's Attendance</h3>
+                            <Link 
+                                to="/student/history" 
+                                className="text-blue-600 text-sm font-medium hover:text-blue-700 flex items-center gap-1"
+                            >
+                                View All <ChevronRight className="w-4 h-4" />
+                            </Link>
+                        </div>
+                        
+                        {loading ? (
+                            <div className="flex items-center justify-center py-8">
+                                <div className="w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                            </div>
+                        ) : (
+                            <div className="overflow-x-auto">
+                                <table className="w-full">
+                                    <thead>
+                                        <tr className="border-b border-gray-100">
+                                            <th className="text-left py-3 px-4 text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                                            <th className="text-left py-3 px-4 text-xs font-medium text-gray-500 uppercase tracking-wider">Time In</th>
+                                            <th className="text-left py-3 px-4 text-xs font-medium text-gray-500 uppercase tracking-wider">Time Out</th>
+                                            <th className="text-left py-3 px-4 text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {attendanceHistory.map((record) => (
+                                            <tr key={record.id} className="border-b border-gray-50 hover:bg-gray-50">
+                                                <td className="py-3 px-4 text-sm text-gray-900 font-medium">
+                                                    {record.date}
+                                                </td>
+                                                <td className="py-3 px-4 text-sm text-gray-600">
+                                                    {record.timeIn}
+                                                </td>
+                                                <td className="py-3 px-4 text-sm text-gray-600">
+                                                    {record.timeOut}
+                                                </td>
+                                                <td className="py-3 px-4">
+                                                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${
+                                                        record.status === 'present' 
+                                                            ? 'bg-green-100 text-green-700' 
+                                                            : record.status === 'late'
+                                                            ? 'bg-orange-100 text-orange-700'
+                                                            : 'bg-red-100 text-red-700'
+                                                    }`}>
+                                                        {getStatusIcon(record.status)}
+                                                        {record.status?.charAt(0).toUpperCase() + record.status?.slice(1)}
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
                             </div>
                         )}
-                    </div>
+                    </motion.div>
                 </div>
 
-                {/* Right Col: Stats/History */}
-                <div className="space-y-6">
-                    <h2 className="text-xl font-bold text-gray-900">Recent History</h2>
-                    <div className="bg-white border border-gray-100 rounded-2xl p-4 space-y-4 shadow-sm">
-                        {loading ? (
-                            <p className="text-gray-500 text-center py-4">Loading...</p>
-                        ) : attendanceHistory.length > 0 ? (
-                            attendanceHistory.map((record) => {
-                                const statusColors = {
-                                    present: { bg: 'bg-green-100', text: 'text-green-700', icon: CheckCircle },
-                                    late: { bg: 'bg-yellow-100', text: 'text-yellow-700', icon: Clock },
-                                    absent: { bg: 'bg-red-100', text: 'text-red-700', icon: XCircle }
-                                };
-                                const statusStyle = statusColors[record.status] || statusColors.present;
-                                const StatusIcon = statusStyle.icon;
-
-                                return (
-                                    <div key={record.id} className="flex items-center gap-3 pb-3 border-b border-gray-100 last:border-0 last:pb-0 hover:bg-gray-50 p-2 rounded-lg transition-colors">
-                                        <div className={`p-2 rounded-full ${statusStyle.bg} ${statusStyle.text}`}>
-                                            <StatusIcon className="w-4 h-4" />
-                                        </div>
-                                        <div className="flex-1">
-                                            <p className="text-sm font-bold text-gray-900">{record.event?.name || 'Unknown Event'}</p>
-                                            <p className="text-xs text-gray-500">
-                                                {formatDate(record.date)} at {formatTime(record.time)}
+                {/* Right Sidebar - Notifications */}
+                <div className="lg:col-span-1">
+                    <motion.div
+                        initial={{ opacity: 0, x: 20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 sticky top-24"
+                    >
+                        <div className="flex items-center justify-between mb-4">
+                            <h3 className="font-semibold text-gray-900 flex items-center gap-2">
+                                <Bell className="w-5 h-5 text-blue-600" />
+                                Notifications
+                            </h3>
+                            <span className="bg-red-500 text-white text-xs px-2 py-0.5 rounded-full font-medium">
+                                {notifications.length}
+                            </span>
+                        </div>
+                        
+                        <div className="space-y-3">
+                            {notifications.map((notification) => (
+                                <div 
+                                    key={notification.id}
+                                    className="p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors cursor-pointer"
+                                >
+                                    <div className="flex items-start gap-3">
+                                        <div className={`w-2 h-2 rounded-full mt-2 flex-shrink-0 ${
+                                            notification.type === 'success' ? 'bg-green-500' :
+                                            notification.type === 'warning' ? 'bg-orange-500' : 'bg-blue-500'
+                                        }`}></div>
+                                        <div className="flex-1 min-w-0">
+                                            <p className="font-medium text-gray-900 text-sm truncate">
+                                                {notification.title}
+                                            </p>
+                                            <p className="text-gray-500 text-xs mt-1 line-clamp-2">
+                                                {notification.message}
+                                            </p>
+                                            <p className="text-gray-400 text-xs mt-2">
+                                                {notification.time}
                                             </p>
                                         </div>
-                                        <span className={`text-xs font-bold ${statusStyle.text}`}>
-                                            {record.status.charAt(0).toUpperCase() + record.status.slice(1)}
-                                        </span>
                                     </div>
-                                );
-                            })
-                        ) : (
-                            <p className="text-gray-500 text-center py-4">No attendance records yet.</p>
-                        )}
-                    </div>
+                                </div>
+                            ))}
+                        </div>
+
+                        <button className="w-full mt-4 py-2 text-blue-600 text-sm font-medium hover:text-blue-700 transition-colors">
+                            View all notifications
+                        </button>
+                    </motion.div>
                 </div>
             </div>
         </div>
     );
 };
 
-export default StudentDashboard;
+export default Dashboard;

@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Download, FileText, Loader, BarChart } from 'lucide-react';
+import { Download, FileText, Loader, BarChart, Calendar } from 'lucide-react';
 import { motion } from 'framer-motion';
 import api from '../../api/axios';
 import { useNotification } from '../../context/NotificationContext';
+import { exportAttendanceCSV } from '../../utils/csvExport';
 
 interface Event {
     id: number;
@@ -79,45 +80,7 @@ const ReportsPage: React.FC = () => {
             return;
         }
 
-        const escapeCSV = (value: any) => {
-            if (value === null || value === undefined) return '';
-            const stringValue = String(value);
-            if (stringValue.includes(',') || stringValue.includes('"') || stringValue.includes('\n')) {
-                return `"${stringValue.replace(/"/g, '""')}"`;
-            }
-            return stringValue;
-        };
-
-        const headers = ['Student', 'Status', 'Date', 'Time', 'Confidence Score'];
-        const rows = attendanceData.map((record) => [
-            escapeCSV(record.student_username || record.student || 'Unknown'),
-            escapeCSV(record.status),
-            escapeCSV(record.date),
-            escapeCSV(record.time),
-            escapeCSV((record.confidence_score * 100).toFixed(2) + '%'),
-        ]);
-
-        const csvContent = [
-            headers.map(escapeCSV).join(','),
-            ...rows.map((row) => row.join(',')),
-        ].join('\n');
-
-        const BOM = '\uFEFF';
-        const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' });
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-
-        const sanitizedEventName = selectedEvent.name
-            .replace(/[<>:"/\\|?*]/g, '_')
-            .replace(/\s+/g, '_')
-            .substring(0, 50);
-
-        a.download = `${sanitizedEventName}_attendance_${new Date().toISOString().split('T')[0]}.csv`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        window.URL.revokeObjectURL(url);
+        exportAttendanceCSV(attendanceData, selectedEvent.name);
         success('CSV exported successfully!');
     };
 
@@ -153,34 +116,39 @@ const ReportsPage: React.FC = () => {
     return (
         <div className="space-y-6">
             {/* Header */}
-            <div>
-                <h1 className="text-3xl font-display font-bold">Reports</h1>
-                <p className="text-gray-400 mt-1">Export and analyze attendance data</p>
+            <div className="flex items-center justify-between">
+                <div>
+                    <h1 className="text-2xl font-bold text-gray-900">Reports</h1>
+                    <p className="text-gray-500 text-sm">Export and analyze attendance data</p>
+                </div>
             </div>
 
             {/* Event Selector */}
             {!loading && events.length > 0 && (
-                <div className="bg-surface/50 border border-white/5 rounded-xl p-4">
-                    <label className="block text-sm font-medium text-gray-300 mb-2">Select Event</label>
+                <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Select Event</label>
                     <div className="flex gap-3">
-                        <select
-                            value={selectedEvent?.id || ''}
-                            onChange={(e) => {
-                                const event = events.find((ev) => ev.id === parseInt(e.target.value));
-                                setSelectedEvent(event || null);
-                            }}
-                            className="flex-1 bg-black/40 border border-gray-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-primary/50"
-                        >
-                            {events.map((event) => (
-                                <option key={event.id} value={event.id}>
-                                    {event.name} - {new Date(event.date).toLocaleDateString()}
-                                </option>
-                            ))}
-                        </select>
+                        <div className="relative flex-1">
+                            <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                            <select
+                                value={selectedEvent?.id || ''}
+                                onChange={(e) => {
+                                    const event = events.find((ev) => ev.id === parseInt(e.target.value));
+                                    setSelectedEvent(event || null);
+                                }}
+                                className="w-full bg-gray-50 border border-gray-200 rounded-xl pl-10 pr-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none"
+                            >
+                                {events.map((event) => (
+                                    <option key={event.id} value={event.id}>
+                                        {event.name} - {new Date(event.date).toLocaleDateString()}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
                         <button
                             onClick={handleExportCSV}
                             disabled={attendanceData.length === 0}
-                            className="bg-green-500/20 text-green-500 border border-green-500/50 hover:bg-green-500/30 px-6 py-3 rounded-lg font-bold flex items-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="bg-green-600 text-white hover:bg-green-700 px-6 py-3 rounded-xl font-medium flex items-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             <Download className="w-5 h-5" />
                             Export CSV
@@ -196,83 +164,89 @@ const ReportsPage: React.FC = () => {
                         { label: 'Total Records', value: stats.total, color: 'blue' },
                         { label: 'Present', value: stats.present, color: 'green' },
                         { label: 'Late', value: stats.late, color: 'yellow' },
-                        {
-                            label: 'Avg Confidence',
-                            value: `${stats.avgConfidence.toFixed(1)}%`,
-                            color: 'purple',
-                        },
+                        { label: 'Avg Confidence', value: `${stats.avgConfidence.toFixed(1)}%`, color: 'purple' },
                     ].map((stat, i) => (
                         <motion.div
                             key={i}
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: i * 0.1 }}
-                            className="bg-surface/50 backdrop-blur-md border border-white/5 p-6 rounded-2xl"
+                            className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100"
                         >
-                            <div className={`p-3 bg-${stat.color}-500/20 rounded-xl inline-flex mb-4`}>
-                                <BarChart className={`w-6 h-6 text-${stat.color}-500`} />
+                            <div className={`p-3 bg-${stat.color}-100 rounded-xl inline-flex mb-4`}>
+                                <BarChart className={`w-6 h-6 text-${stat.color}-600`} />
                             </div>
-                            <p className="text-3xl font-bold font-display">{stat.value}</p>
-                            <p className="text-gray-400 mt-1">{stat.label}</p>
+                            <p className="text-3xl font-bold text-gray-900">{stat.value}</p>
+                            <p className="text-gray-500 mt-1 text-sm">{stat.label}</p>
                         </motion.div>
                     ))}
                 </div>
             )}
 
             {/* Attendance Table */}
-            <div className="bg-surface/30 backdrop-blur-md border border-white/5 rounded-2xl p-6">
+            <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
                 <div className="flex items-center justify-between mb-6">
-                    <h2 className="text-xl font-bold flex items-center gap-2">
-                        <FileText className="w-6 h-6 text-primary" />
+                    <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                        <FileText className="w-5 h-5 text-blue-600" />
                         Attendance Records
                     </h2>
                 </div>
 
                 {loadingAttendance ? (
                     <div className="flex items-center justify-center py-12">
-                        <Loader className="w-8 h-8 animate-spin text-primary" />
+                        <Loader className="w-8 h-8 animate-spin text-blue-600" />
                     </div>
                 ) : attendanceData.length > 0 ? (
                     <div className="overflow-x-auto">
                         <table className="w-full">
                             <thead>
-                                <tr className="border-b border-white/10">
-                                    <th className="text-left py-3 px-4 font-bold">Student</th>
-                                    <th className="text-left py-3 px-4 font-bold">Status</th>
-                                    <th className="text-left py-3 px-4 font-bold">Date</th>
-                                    <th className="text-left py-3 px-4 font-bold">Time</th>
-                                    <th className="text-left py-3 px-4 font-bold">Confidence</th>
+                                <tr className="border-b border-gray-100">
+                                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">Student</th>
+                                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">Status</th>
+                                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">Date</th>
+                                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">Time</th>
+                                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">Confidence</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                {attendanceData.map((record) => {
-                                    const statusColors = {
-                                        present: 'text-green-500',
-                                        late: 'text-yellow-500',
-                                        absent: 'text-red-500',
-                                    };
-                                    return (
-                                        <tr key={record.id} className="border-b border-white/5 hover:bg-white/5">
-                                            <td className="py-3 px-4">
-                                                {record.student_username || record.student || 'Unknown'}
-                                            </td>
-                                            <td className={`py-3 px-4 font-bold ${statusColors[record.status as keyof typeof statusColors] || ''}`}>
+                                {attendanceData.map((record) => (
+                                    <tr key={record.id} className="border-b border-gray-50 hover:bg-gray-50">
+                                        <td className="py-3 px-4">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
+                                                    <span className="text-sm font-medium text-gray-600">
+                                                        {(record.student_username || 'U').charAt(0)}
+                                                    </span>
+                                                </div>
+                                                <span className="font-medium text-gray-900">
+                                                    {record.student_username || record.student || 'Unknown'}
+                                                </span>
+                                            </div>
+                                        </td>
+                                        <td className="py-3 px-4">
+                                            <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                                                record.status === 'present' 
+                                                    ? 'bg-green-100 text-green-700' 
+                                                    : record.status === 'late'
+                                                    ? 'bg-orange-100 text-orange-700'
+                                                    : 'bg-red-100 text-red-700'
+                                            }`}>
                                                 {record.status.charAt(0).toUpperCase() + record.status.slice(1)}
-                                            </td>
-                                            <td className="py-3 px-4 text-gray-400">{formatDate(record.date)}</td>
-                                            <td className="py-3 px-4 text-gray-400">{formatTime(record.time)}</td>
-                                            <td className="py-3 px-4 text-gray-400">
-                                                {(record.confidence_score * 100).toFixed(1)}%
-                                            </td>
-                                        </tr>
-                                    );
-                                })}
+                                            </span>
+                                        </td>
+                                        <td className="py-3 px-4 text-gray-500">{formatDate(record.date)}</td>
+                                        <td className="py-3 px-4 text-gray-500">{formatTime(record.time)}</td>
+                                        <td className="py-3 px-4 text-gray-500">
+                                            {(record.confidence_score * 100).toFixed(1)}%
+                                        </td>
+                                    </tr>
+                                ))}
                             </tbody>
                         </table>
                     </div>
                 ) : (
                     <div className="text-center py-12 text-gray-500">
-                        <FileText className="w-16 h-16 mx-auto mb-4 opacity-50" />
+                        <FileText className="w-16 h-16 mx-auto mb-4 opacity-30" />
                         <p>No attendance records for this event yet.</p>
                     </div>
                 )}

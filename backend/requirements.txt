@@ -3,12 +3,12 @@ djangorestframework
 django-cors-headers
 djangorestframework-simplejwt
 face_recognition
-opencv-python
+opencv-python-headless
 Pillow
 numpy
 pandas
-# psycopg2-binary
 python-dotenv
-pytest
-pytest-django
-pytest-cov
+gunicorn
+whitenoise
+dj-database-url
+psycopg2-binary

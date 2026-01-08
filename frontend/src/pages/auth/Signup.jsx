@@ -13,23 +13,77 @@ const Signup = () => {
         username: '',
         email: '',
         password: '',
+        confirmPassword: '',
         phone: ''
     });
     const [error, setError] = useState(null);
+    const [fieldErrors, setFieldErrors] = useState({});
     const { signup } = useAuth();
     const navigate = useNavigate();
     const { success } = useNotification();
 
     const handleChange = (e) => {
-        setFormData({ ...formData, [e.target.name]: e.target.value });
+        const { name, value } = e.target;
+        setFormData({ ...formData, [name]: value });
+        
+        // Clear field-specific error when user starts typing
+        if (fieldErrors[name]) {
+            setFieldErrors({ ...fieldErrors, [name]: null });
+        }
+        
+        // Real-time password mismatch check
+        if (name === 'confirmPassword' || name === 'password') {
+            const password = name === 'password' ? value : formData.password;
+            const confirmPassword = name === 'confirmPassword' ? value : formData.confirmPassword;
+            
+            if (confirmPassword && password !== confirmPassword) {
+                setFieldErrors(prev => ({ ...prev, confirmPassword: 'Passwords do not match' }));
+            } else {
+                setFieldErrors(prev => ({ ...prev, confirmPassword: null }));
+            }
+        }
+    };
+
+    const validateForm = () => {
+        const errors = {};
+        
+        if (!formData.username.trim()) {
+            errors.username = 'Username is required';
+        }
+        
+        if (!formData.email.trim()) {
+            errors.email = 'Email is required';
+        } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+            errors.email = 'Please enter a valid email address';
+        }
+        
+        if (!formData.password) {
+            errors.password = 'Password is required';
+        } else if (formData.password.length < 8) {
+            errors.password = 'Password must be at least 8 characters';
+        }
+        
+        if (!formData.confirmPassword) {
+            errors.confirmPassword = 'Please confirm your password';
+        } else if (formData.password !== formData.confirmPassword) {
+            errors.confirmPassword = 'Passwords do not match';
+        }
+        
+        setFieldErrors(errors);
+        return Object.keys(errors).length === 0;
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError(null);
-        // Map "Full Name" to "username" for simplicity in this demo, real app splits them
-        const result = await signup({ ...formData, role });
-
+        
+        if (!validateForm()) {
+            return;
+        }
+        
+        // Remove confirmPassword before sending to API
+        const { confirmPassword, ...submitData } = formData;
+        const result = await signup({ ...submitData, role });
 
         if (result.success) {
             // EMAIL VERIFICATION DISABLED - Redirect directly to login
@@ -121,7 +175,7 @@ const Signup = () => {
                         </div>
                     </div>
 
-                    <div className="space-y-2 md:col-span-2">
+                    <div className="space-y-2">
                         <label className="text-sm text-gray-600 ml-1">Password</label>
                         <div className="relative group">
                             <Lock className="absolute left-3 top-3 w-5 h-5 text-gray-400 group-focus-within:text-primary transition-colors" />
@@ -129,10 +183,28 @@ const Signup = () => {
                                 name="password"
                                 type="password"
                                 placeholder="Min. 8 characters"
+                                value={formData.password}
                                 onChange={handleChange}
-                                className="w-full bg-white border border-gray-200 rounded-xl px-10 py-3 text-tertiary focus:outline-none focus:border-primary/50 transition-all shadow-sm"
+                                className={`w-full bg-white border rounded-xl px-10 py-3 text-tertiary focus:outline-none transition-all shadow-sm ${fieldErrors.password ? 'border-red-500' : 'border-gray-200 focus:border-primary/50'}`}
                             />
                         </div>
+                        {fieldErrors.password && <p className="text-red-500 text-xs ml-1">{fieldErrors.password}</p>}
+                    </div>
+
+                    <div className="space-y-2">
+                        <label className="text-sm text-gray-600 ml-1">Confirm Password</label>
+                        <div className="relative group">
+                            <Lock className="absolute left-3 top-3 w-5 h-5 text-gray-400 group-focus-within:text-primary transition-colors" />
+                            <input
+                                name="confirmPassword"
+                                type="password"
+                                placeholder="Confirm your password"
+                                value={formData.confirmPassword}
+                                onChange={handleChange}
+                                className={`w-full bg-white border rounded-xl px-10 py-3 text-tertiary focus:outline-none transition-all shadow-sm ${fieldErrors.confirmPassword ? 'border-red-500' : 'border-gray-200 focus:border-primary/50'}`}
+                            />
+                        </div>
+                        {fieldErrors.confirmPassword && <p className="text-red-500 text-xs ml-1">{fieldErrors.confirmPassword}</p>}
                     </div>
 
                     <div className="md:col-span-2 mt-4">
