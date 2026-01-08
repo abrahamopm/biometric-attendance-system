@@ -112,18 +112,20 @@ const StudentDashboard = () => {
                 <motion.div
                     initial={{ opacity: 0, y: -20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="bg-yellow-500/20 border border-yellow-500/50 rounded-xl p-4 flex items-center justify-between"
+                    className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 flex items-center justify-between"
                 >
                     <div className="flex items-center gap-3">
-                        <AlertCircle className="w-5 h-5 text-yellow-500" />
+                        <div className="p-2 bg-yellow-100 rounded-lg">
+                            <AlertCircle className="w-5 h-5 text-yellow-600" />
+                        </div>
                         <div>
-                            <p className="font-bold text-yellow-500">Action Required: Enroll Your Face</p>
-                            <p className="text-sm text-gray-400">You need to enroll your face before marking attendance.</p>
+                            <p className="font-bold text-yellow-800">Action Required: Enroll Your Face</p>
+                            <p className="text-sm text-yellow-700">You need to enroll your face before marking attendance.</p>
                         </div>
                     </div>
                     <Link
                         to="/student/enroll"
-                        className="bg-yellow-500 hover:bg-yellow-600 text-black px-4 py-2 rounded-lg font-bold transition-all"
+                        className="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded-lg font-bold transition-all shadow-md hover:shadow-lg"
                     >
                         Enroll Now
                     </Link>
@@ -132,21 +134,21 @@ const StudentDashboard = () => {
 
             <div className="flex flex-col md:flex-row justify-between items-end gap-4">
                 <div>
-                    <h1 className="text-3xl font-display font-bold">Hello, {user?.username}</h1>
-                    <p className="text-gray-400">Ready to attend checks for today?</p>
+                    <h1 className="text-3xl font-display font-bold text-gray-900">Hello, {user?.username}</h1>
+                    <p className="text-gray-600">Ready to attend checks for today?</p>
                 </div>
 
-                <div className="bg-surface/50 p-1.5 rounded-xl border border-white/10 flex gap-2 w-full md:w-auto">
+                <div className="bg-white p-1.5 rounded-xl border border-gray-200 shadow-sm flex gap-2 w-full md:w-auto">
                     <input
                         type="text"
                         placeholder="Enter Class Code"
                         value={joinCode}
                         onChange={(e) => setJoinCode(e.target.value)}
-                        className="bg-black/20 border-none rounded-lg px-4 py-2 text-white placeholder-gray-500 focus:ring-0 w-full md:w-48"
+                        className="bg-transparent border-none rounded-lg px-4 py-2 text-gray-900 placeholder-gray-400 focus:ring-0 w-full md:w-48 outline-none"
                     />
                     <button
                         onClick={handleJoin}
-                        className="bg-accent hover:bg-accent/80 text-white px-4 py-2 rounded-lg font-bold flex items-center gap-2 transition-all whitespace-nowrap"
+                        className="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-lg font-bold flex items-center gap-2 transition-all whitespace-nowrap shadow-sm"
                     >
                         <PlusCircle className="w-4 h-4" />
                         Join
@@ -157,82 +159,90 @@ const StudentDashboard = () => {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 {/* Left Col: Upcoming / Active */}
                 <div className="lg:col-span-2 space-y-6">
-                    <h2 className="text-xl font-bold">Today's Schedule</h2>
+                    <h2 className="text-xl font-bold text-gray-900">Today's Schedule</h2>
                     <div className="grid gap-4">
                         {enrollments.map((enrol) => {
                             const event = enrol.event;
+                            const isActive = isEventActive(event);
                             return (
                                 <motion.div
                                     key={enrol.id}
                                     whileHover={{ scale: 1.01 }}
-                                    className="bg-gradient-to-r from-surface to-surface/50 border border-primary/20 p-6 rounded-2xl relative overflow-hidden group"
+                                    className={`relative overflow-hidden border p-6 rounded-2xl transition-all group ${isActive
+                                            ? 'bg-white border-primary/20 shadow-lg ring-1 ring-primary/10'
+                                            : 'bg-white border-gray-200 shadow-sm opacity-90'
+                                        }`}
                                 >
-                                    <div className="absolute top-0 right-0 p-4 opacity-50">
-                                        <Clock className="w-24 h-24 text-white/5" />
+                                    <div className="absolute top-0 right-0 p-4 opacity-5">
+                                        <Clock className="w-24 h-24 text-primary" />
                                     </div>
 
                                     <div className="relative z-10">
                                         <div className="flex justify-between items-start mb-4">
                                             <div>
-                                                {isEventActive(event) ? (
-                                                    <span className="bg-green-500/20 text-green-500 px-3 py-1 rounded-full text-xs font-bold mb-2 inline-block">Active Now</span>
+                                                {isActive ? (
+                                                    <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-bold mb-2 inline-block">Active Now</span>
                                                 ) : (
-                                                    <span className="bg-gray-500/20 text-gray-500 px-3 py-1 rounded-full text-xs font-bold mb-2 inline-block">Scheduled</span>
+                                                    <span className="bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-xs font-bold mb-2 inline-block">Scheduled</span>
                                                 )}
-                                                <h3 className="text-2xl font-bold mt-1">{event.name}</h3>
-                                                <p className="text-gray-400 text-sm">
+                                                <h3 className="text-2xl font-bold mt-1 text-gray-900">{event.name}</h3>
+                                                <p className="text-gray-500 text-sm">
                                                     {new Date(event.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} at {formatTime(event.time)}
                                                 </p>
-                                                <p className="text-gray-500 text-xs mt-1">Code: {event.join_code}</p>
+                                                <p className="text-gray-400 text-xs mt-1 font-mono">Code: {event.join_code}</p>
                                             </div>
                                             <div className="text-right">
-                                                <p className="text-2xl font-display font-bold">{formatTime(event.time)}</p>
+                                                <p className="text-2xl font-display font-bold text-primary">{formatTime(event.time)}</p>
                                                 <p className="text-xs text-gray-400">{new Date(event.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</p>
                                             </div>
                                         </div>
 
                                         <button
                                             onClick={() => navigate('/attendance/live', { state: { eventId: event.id, eventName: event.name } })}
-                                            disabled={!isEventActive(event)}
-                                            className={`w-full font-bold py-3 rounded-xl transform translate-y-2 opacity-80 group-hover:translate-y-0 group-hover:opacity-100 transition-all flex justify-center items-center gap-2 ${isEventActive(event)
-                                                    ? 'bg-white text-black hover:bg-gray-100'
-                                                    : 'bg-gray-500/50 text-gray-400 cursor-not-allowed'
+                                            disabled={!isActive}
+                                            className={`w-full font-bold py-3 rounded-xl transform translate-y-2 group-hover:translate-y-0 transition-all flex justify-center items-center gap-2 ${isActive
+                                                ? 'bg-primary text-white hover:bg-primary/90 shadow-md opacity-100'
+                                                : 'bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-200 opacity-80'
                                                 }`}
                                         >
-                                            {isEventActive(event) ? 'Mark Attendance' : 'Not Active'}
+                                            {isActive ? 'Mark Attendance' : 'Not Active'}
                                         </button>
                                     </div>
                                 </motion.div>
                             );
                         })}
 
-                        {enrollments.length === 0 && <p className="text-gray-500">You haven't joined any classes yet.</p>}
+                        {enrollments.length === 0 && (
+                            <div className="text-center py-10 bg-white rounded-2xl border border-dashed border-gray-300">
+                                <p className="text-gray-500">You haven't joined any classes yet.</p>
+                            </div>
+                        )}
                     </div>
                 </div>
 
                 {/* Right Col: Stats/History */}
                 <div className="space-y-6">
-                    <h2 className="text-xl font-bold">Recent History</h2>
-                    <div className="bg-surface/30 border border-white/5 rounded-2xl p-4 space-y-4">
+                    <h2 className="text-xl font-bold text-gray-900">Recent History</h2>
+                    <div className="bg-white border border-gray-100 rounded-2xl p-4 space-y-4 shadow-sm">
                         {loading ? (
                             <p className="text-gray-500 text-center py-4">Loading...</p>
                         ) : attendanceHistory.length > 0 ? (
                             attendanceHistory.map((record) => {
                                 const statusColors = {
-                                    present: { bg: 'bg-green-500/20', text: 'text-green-500', icon: CheckCircle },
-                                    late: { bg: 'bg-yellow-500/20', text: 'text-yellow-500', icon: Clock },
-                                    absent: { bg: 'bg-red-500/20', text: 'text-red-500', icon: XCircle }
+                                    present: { bg: 'bg-green-100', text: 'text-green-700', icon: CheckCircle },
+                                    late: { bg: 'bg-yellow-100', text: 'text-yellow-700', icon: Clock },
+                                    absent: { bg: 'bg-red-100', text: 'text-red-700', icon: XCircle }
                                 };
                                 const statusStyle = statusColors[record.status] || statusColors.present;
                                 const StatusIcon = statusStyle.icon;
 
                                 return (
-                                    <div key={record.id} className="flex items-center gap-3 pb-3 border-b border-white/5 last:border-0 last:pb-0">
+                                    <div key={record.id} className="flex items-center gap-3 pb-3 border-b border-gray-100 last:border-0 last:pb-0 hover:bg-gray-50 p-2 rounded-lg transition-colors">
                                         <div className={`p-2 rounded-full ${statusStyle.bg} ${statusStyle.text}`}>
                                             <StatusIcon className="w-4 h-4" />
                                         </div>
                                         <div className="flex-1">
-                                            <p className="text-sm font-bold">{record.event?.name || 'Unknown Event'}</p>
+                                            <p className="text-sm font-bold text-gray-900">{record.event?.name || 'Unknown Event'}</p>
                                             <p className="text-xs text-gray-500">
                                                 {formatDate(record.date)} at {formatTime(record.time)}
                                             </p>

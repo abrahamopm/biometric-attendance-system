@@ -187,25 +187,29 @@ const LiveAttendance = () => {
 
             <div className="relative w-[400px] h-[400px] rounded-[3rem] overflow-hidden border-8 border-gray-800 shadow-2xl bg-black">
                 {cameraError ? (
-                    <div className="w-full h-full flex flex-col items-center justify-center bg-black/50 p-6 text-center">
+                    <div className="w-full h-full flex flex-col items-center justify-center bg-black/50 p-6 text-center z-10 relative">
                         <CameraOff className="w-16 h-16 text-red-500 mb-4" />
                         <p className="text-red-500 font-bold mb-2">Camera Error</p>
                         <p className="text-gray-400 text-sm">{cameraError}</p>
                     </div>
-                ) : !cameraReady && scanStatus === 'scanning' ? (
-                    <div className="w-full h-full flex flex-col items-center justify-center bg-gray-900 p-6 text-center">
-                        <Loader className="w-12 h-12 text-primary animate-spin mb-4" />
-                        <p className="text-gray-400">Initializing camera...</p>
-                    </div>
                 ) : (
-                    <Webcam
-                        ref={webcamRef}
-                        className="w-full h-full object-cover filter brightness-110 contrast-110 bg-black"
-                        videoConstraints={{ facingMode: "user" }}
-                        onUserMedia={handleUserMedia}
-                        onUserMediaError={handleCameraError}
-                        screenshotFormat="image/jpeg"
-                    />
+                    <>
+                        <Webcam
+                            ref={webcamRef}
+                            className="w-full h-full object-cover filter brightness-110 contrast-110 bg-black absolute inset-0"
+                            videoConstraints={{ facingMode: "user" }}
+                            onUserMedia={handleUserMedia}
+                            onUserMediaError={handleCameraError}
+                            screenshotFormat="image/jpeg"
+                        />
+                        {/* Initializing Overlay */}
+                        {(!cameraReady && scanStatus === 'scanning') && (
+                            <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-gray-900 p-6 text-center">
+                                <Loader className="w-12 h-12 text-primary animate-spin mb-4" />
+                                <p className="text-gray-400">Initializing camera...</p>
+                            </div>
+                        )}
+                    </>
                 )}
 
                 {/* HUD Overlay */}

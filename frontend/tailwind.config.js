@@ -7,13 +7,15 @@ export default {
   theme: {
     extend: {
       colors: {
-        background: "#0a0a0a", // Deep black/gray
-        surface: "#1a1a1a", // Slightly lighter for cards
-        primary: "#3b82f6", // Electric Blue
-        secondary: "#8b5cf6", // Purple
-        accent: "#06b6d4", // Cyan
+        background: "#F1F7ED", // Mint Cream (Light Background)
+        surface: "#ffffff", // White (Cards)
+        primary: "#735CDD", // Slate Blue
+        secondary: "#4A3F9B", // Deep Purple
+        tertiary: "#1e1b4b", // Dark Indigo (Main Text)
+        accent: "#9D8FE3", // Light Purple Accent
         success: "#10b981", // Emerald Green
         error: "#ef4444", // Red
+        warning: "#f59e0b", // Amber
       },
       fontFamily: {
         sans: ['Inter', 'sans-serif'],

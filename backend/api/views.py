@@ -313,6 +313,45 @@ class UserViewSet(viewsets.ModelViewSet):
             }, status=status.HTTP_400_BAD_REQUEST)
 
         return Response({"message": "Face enrolled successfully"})
+    
+    @action(detail=False, methods=['post'])
+    def change_password(self, request):
+        """Change user password"""
+        user = request.user
+        old_password = request.data.get('old_password')
+        new_password = request.data.get('new_password')
+        
+        if not old_password or not new_password:
+            return Response({"error": "Both old and new passwords are required"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Verify old password
+        if not user.check_password(old_password):
+            return Response({"error": "Current password is incorrect"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Validate new password length
+        if len(new_password) < 8:
+            return Response({"error": "New password must be at least 8 characters"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Set new password
+        user.set_password(new_password)
+        user.save()
+        
+        logger.info(f"Password changed successfully for user {user.username}")
+        return Response({"message": "Password changed successfully"})
+    
+    @action(detail=False, methods=['post'])
+    def reset_face(self, request):
+        """Reset user's face enrollment"""
+        user = request.user
+        
+        if not user.face_embedding:
+            return Response({"error": "No face data to reset"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        user.face_embedding = None
+        user.save(update_fields=["face_embedding"])
+        
+        logger.info(f"Face data reset for user {user.username}")
+        return Response({"message": "Face data reset successfully"})
 
 
 class EnrollmentViewSet(viewsets.ModelViewSet):

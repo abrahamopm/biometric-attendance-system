@@ -8,6 +8,11 @@ import StudentDashboard from './pages/student/Dashboard.jsx';
 import HostDashboard from './pages/host/Dashboard.jsx';
 import FaceEnroll from './pages/student/FaceEnroll.jsx';
 import LiveAttendance from './pages/common/LiveAttendance.jsx';
+import ProfilePage from './pages/common/ProfilePage';
+import ManageEventsPage from './pages/host/ManageEventsPage';
+import LiveTrackingPage from './pages/host/LiveTrackingPage';
+import ReportsPage from './pages/host/ReportsPage';
+import MyAttendancePage from './pages/student/MyAttendancePage';
 import NotificationContainer from './components/NotificationContainer.jsx';
 import ErrorBoundary from './components/ErrorBoundary.jsx';
 
@@ -70,6 +75,30 @@ const AppRoutes = () => {
                             </PrivateRoute>
                         }
                     />
+                    <Route
+                        path="student/check-in"
+                        element={
+                            <PrivateRoute allowedRoles={['student']}>
+                                <LiveAttendance />
+                            </PrivateRoute>
+                        }
+                    />
+                    <Route
+                        path="student/history"
+                        element={
+                            <PrivateRoute allowedRoles={['student']}>
+                                <MyAttendancePage />
+                            </PrivateRoute>
+                        }
+                    />
+                    <Route
+                        path="student/profile"
+                        element={
+                            <PrivateRoute allowedRoles={['student']}>
+                                <ProfilePage />
+                            </PrivateRoute>
+                        }
+                    />
 
                     {/* Host Routes */}
                     <Route
@@ -77,6 +106,38 @@ const AppRoutes = () => {
                         element={
                             <PrivateRoute allowedRoles={['host']}>
                                 <HostDashboard />
+                            </PrivateRoute>
+                        }
+                    />
+                    <Route
+                        path="host/events"
+                        element={
+                            <PrivateRoute allowedRoles={['host']}>
+                                <ManageEventsPage />
+                            </PrivateRoute>
+                        }
+                    />
+                    <Route
+                        path="host/live"
+                        element={
+                            <PrivateRoute allowedRoles={['host']}>
+                                <LiveTrackingPage />
+                            </PrivateRoute>
+                        }
+                    />
+                    <Route
+                        path="host/reports"
+                        element={
+                            <PrivateRoute allowedRoles={['host']}>
+                                <ReportsPage />
+                            </PrivateRoute>
+                        }
+                    />
+                    <Route
+                        path="host/profile"
+                        element={
+                            <PrivateRoute allowedRoles={['host']}>
+                                <ProfilePage />
                             </PrivateRoute>
                         }
                     />

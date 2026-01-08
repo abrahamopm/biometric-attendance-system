@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import api from '../../api/axios';
 import { useNavigate } from 'react-router-dom';
 import { useNotification } from '../../context/NotificationContext';
+import CreateSessionModal from '../../components/CreateSessionModal';
 
 const HostDashboard = () => {
     const [events, setEvents] = useState([]);
@@ -11,6 +12,7 @@ const HostDashboard = () => {
     const [selectedEvent, setSelectedEvent] = useState(null);
     const [attendanceData, setAttendanceData] = useState([]);
     const [loadingAttendance, setLoadingAttendance] = useState(false);
+    const [isModalOpen, setIsModalOpen] = useState(false);
     const navigate = useNavigate();
     const { success, error: showError } = useNotification();
 
@@ -26,32 +28,6 @@ const HostDashboard = () => {
             console.error("Failed to fetch events", error);
         } finally {
             setLoading(false);
-        }
-    };
-
-    const handleCreateSession = async () => {
-        const name = prompt("Enter Session Name:");
-        if (!name) return;
-
-        const description = prompt("Enter Description (optional):") || "";
-        const dateStr = prompt("Enter Date (YYYY-MM-DD):", new Date().toISOString().split('T')[0]);
-        const timeStr = prompt("Enter Time (HH:MM):", new Date().toTimeString().slice(0, 5));
-        const durationStr = prompt("Enter Duration (HH:MM:SS):", "01:00:00");
-        const gracePeriod = parseInt(prompt("Enter Grace Period (minutes):", "15") || "15");
-
-        try {
-            await api.post('/events/', {
-                name,
-                description,
-                date: dateStr,
-                time: timeStr,
-                duration: durationStr,
-                grace_period: gracePeriod
-            });
-            await fetchEvents();
-            success(`Session "${name}" created successfully!`);
-        } catch (e) {
-            showError(e.response?.data?.error || e.response?.data?.message || "Failed to create session");
         }
     };
 
@@ -107,13 +83,13 @@ const HostDashboard = () => {
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        
+
         // Sanitize filename: remove special characters that might break file system
         const sanitizedEventName = selectedEvent.name
             .replace(/[<>:"/\\|?*]/g, '_')  // Replace invalid filename chars
             .replace(/\s+/g, '_')  // Replace spaces with underscores
             .substring(0, 50);  // Limit length
-        
+
         a.download = `${sanitizedEventName}_attendance_${new Date().toISOString().split('T')[0]}.csv`;
         document.body.appendChild(a);
         a.click();
@@ -123,10 +99,10 @@ const HostDashboard = () => {
     };
 
     const formatDate = (dateString) => {
-        return new Date(dateString).toLocaleDateString('en-US', { 
-            month: 'short', 
-            day: 'numeric', 
-            year: 'numeric' 
+        return new Date(dateString).toLocaleDateString('en-US', {
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric'
         });
     };
 
@@ -142,11 +118,11 @@ const HostDashboard = () => {
         <div className="space-y-8 min-h-full">
             <div className="flex justify-between items-center">
                 <div>
-                    <h1 className="text-3xl font-display font-bold">Host Dashboard</h1>
-                    <p className="text-gray-400">Manage your sessions and attendance.</p>
+                    <h1 className="text-3xl font-display font-bold text-gray-900">Host Dashboard</h1>
+                    <p className="text-gray-600">Manage your sessions and attendance.</p>
                 </div>
                 <button
-                    onClick={handleCreateSession}
+                    onClick={() => setIsModalOpen(true)}
                     className="bg-primary hover:bg-primary/80 text-white px-6 py-3 rounded-xl font-bold flex items-center gap-2 transition-all shadow-lg hover:shadow-primary/20"
                 >
                     <Plus className="w-5 h-5" />
@@ -157,48 +133,48 @@ const HostDashboard = () => {
             {/* Quick Stats */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {[
-                    { label: 'Total Students', value: '142', icon: Users, color: 'bg-blue-500/10 text-blue-500' },
-                    { label: 'Active Sessions', value: '1', icon: Calendar, color: 'bg-purple-500/10 text-purple-500' },
-                    { label: 'Avg Attendance', value: '88%', icon: BarChart, color: 'bg-green-500/10 text-green-500' },
+                    { label: 'Total Students', value: '142', icon: Users, color: 'bg-blue-100 text-blue-600' },
+                    { label: 'Active Sessions', value: '1', icon: Calendar, color: 'bg-purple-100 text-purple-600' },
+                    { label: 'Avg Attendance', value: '88%', icon: BarChart, color: 'bg-green-100 text-green-600' },
                 ].map((stat, i) => (
                     <motion.div
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: i * 0.1 }}
                         key={i}
-                        className="bg-surface/50 backdrop-blur-md border border-white/5 p-6 rounded-2xl"
+                        className="bg-white shadow-sm border border-gray-100 p-6 rounded-2xl"
                     >
                         <div className="flex items-start justify-between mb-4">
                             <div className={`p-3 rounded-xl ${stat.color}`}>
                                 <stat.icon className="w-6 h-6" />
                             </div>
-                            <span className="text-3xl font-bold font-display">{stat.value}</span>
+                            <span className="text-3xl font-bold font-display text-gray-900">{stat.value}</span>
                         </div>
-                        <p className="text-gray-400">{stat.label}</p>
+                        <p className="text-gray-500">{stat.label}</p>
                     </motion.div>
                 ))}
             </div>
 
             {/* Active Sessions List */}
-            <div className="bg-surface/30 backdrop-blur-md border border-white/5 rounded-2xl p-6">
-                <h2 className="text-xl font-bold mb-6">Your Sessions</h2>
+            <div className="bg-white shadow-sm border border-gray-100 rounded-2xl p-6">
+                <h2 className="text-xl font-bold mb-6 text-gray-900">Your Sessions</h2>
                 <div className="space-y-4">
-                    {loading ? <Loader className="animate-spin mx-auto" /> : events.map((event) => (
-                        <div key={event.id} className="flex items-center justify-between p-4 bg-black/20 rounded-xl border border-white/5 hover:border-primary/30 transition-all group">
+                    {loading ? <Loader className="animate-spin mx-auto text-primary" /> : events.map((event) => (
+                        <div key={event.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-100 hover:border-primary/30 transition-all group">
                             <div className="flex items-center gap-4">
                                 <div className={`w-3 h-3 rounded-full bg-green-500 animate-pulse`} />
                                 <div>
-                                    <h3 className="font-bold text-lg">{event.name}</h3>
-                                    <div className="flex gap-4 text-sm text-gray-400">
+                                    <h3 className="font-bold text-lg text-gray-900">{event.name}</h3>
+                                    <div className="flex gap-4 text-sm text-gray-500">
                                         <span>{event.time}</span>
-                                        <span className="font-mono bg-white/5 px-2 rounded text-xs py-0.5">Code: {event.join_code}</span>
+                                        <span className="font-mono bg-gray-200 px-2 rounded text-xs py-0.5 text-gray-700">Code: {event.join_code}</span>
                                     </div>
                                 </div>
                             </div>
                             <div className="flex gap-3 opacity-0 group-hover:opacity-100 transition-opacity">
-                                <button 
+                                <button
                                     onClick={() => handleViewReport(event)}
-                                    className="px-4 py-2 bg-white/5 hover:bg-white/10 rounded-lg text-sm flex items-center gap-2"
+                                    className="px-4 py-2 bg-white hover:bg-gray-100 border border-gray-200 rounded-lg text-sm flex items-center gap-2 text-gray-700"
                                 >
                                     <Eye className="w-4 h-4" />
                                     View Report
@@ -217,7 +193,7 @@ const HostDashboard = () => {
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+                        className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
                         onClick={() => setSelectedEvent(null)}
                     >
                         <motion.div
@@ -225,12 +201,12 @@ const HostDashboard = () => {
                             animate={{ scale: 1, opacity: 1 }}
                             exit={{ scale: 0.9, opacity: 0 }}
                             onClick={(e) => e.stopPropagation()}
-                            className="bg-surface/95 backdrop-blur-xl border border-white/10 rounded-2xl p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto"
+                            className="bg-white border border-gray-200 rounded-2xl p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-2xl"
                         >
                             <div className="flex justify-between items-center mb-6">
                                 <div>
-                                    <h2 className="text-2xl font-bold">{selectedEvent.name}</h2>
-                                    <p className="text-gray-400 text-sm">
+                                    <h2 className="text-2xl font-bold text-gray-900">{selectedEvent.name}</h2>
+                                    <p className="text-gray-500 text-sm">
                                         {formatDate(selectedEvent.date)} at {formatTime(selectedEvent.time)}
                                     </p>
                                 </div>
@@ -238,7 +214,7 @@ const HostDashboard = () => {
                                     {attendanceData.length > 0 && (
                                         <button
                                             onClick={handleExportCSV}
-                                            className="bg-green-500/20 text-green-500 border border-green-500/50 hover:bg-green-500/30 px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2"
+                                            className="bg-green-50 text-green-600 border border-green-200 hover:bg-green-100 px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2"
                                         >
                                             <Download className="w-4 h-4" />
                                             Export CSV
@@ -246,7 +222,7 @@ const HostDashboard = () => {
                                     )}
                                     <button
                                         onClick={() => setSelectedEvent(null)}
-                                        className="bg-white/5 hover:bg-white/10 p-2 rounded-lg"
+                                        className="bg-gray-100 hover:bg-gray-200 p-2 rounded-lg text-gray-500 hover:text-gray-700"
                                     >
                                         <X className="w-5 h-5" />
                                     </button>
@@ -261,30 +237,32 @@ const HostDashboard = () => {
                                 <div className="overflow-x-auto">
                                     <table className="w-full">
                                         <thead>
-                                            <tr className="border-b border-white/10">
-                                                <th className="text-left py-3 px-4 font-bold">Student</th>
-                                                <th className="text-left py-3 px-4 font-bold">Status</th>
-                                                <th className="text-left py-3 px-4 font-bold">Date</th>
-                                                <th className="text-left py-3 px-4 font-bold">Time</th>
-                                                <th className="text-left py-3 px-4 font-bold">Confidence</th>
+                                            <tr className="border-b border-gray-200">
+                                                <th className="text-left py-3 px-4 font-bold text-gray-700">Student</th>
+                                                <th className="text-left py-3 px-4 font-bold text-gray-700">Status</th>
+                                                <th className="text-left py-3 px-4 font-bold text-gray-700">Date</th>
+                                                <th className="text-left py-3 px-4 font-bold text-gray-700">Time</th>
+                                                <th className="text-left py-3 px-4 font-bold text-gray-700">Confidence</th>
                                             </tr>
                                         </thead>
                                         <tbody>
                                             {attendanceData.map((record) => {
                                                 const statusColors = {
-                                                    present: 'text-green-500',
-                                                    late: 'text-yellow-500',
-                                                    absent: 'text-red-500'
+                                                    present: 'text-green-600 bg-green-50 px-2 py-1 rounded-full text-xs font-bold inline-block',
+                                                    late: 'text-yellow-600 bg-yellow-50 px-2 py-1 rounded-full text-xs font-bold inline-block',
+                                                    absent: 'text-red-600 bg-red-50 px-2 py-1 rounded-full text-xs font-bold inline-block'
                                                 };
                                                 return (
-                                                    <tr key={record.id} className="border-b border-white/5 hover:bg-white/5">
-                                                        <td className="py-3 px-4">{record.student_username || record.student || 'Unknown'}</td>
-                                                        <td className={`py-3 px-4 font-bold ${statusColors[record.status] || ''}`}>
-                                                            {record.status.charAt(0).toUpperCase() + record.status.slice(1)}
+                                                    <tr key={record.id} className="border-b border-gray-100 hover:bg-gray-50">
+                                                        <td className="py-3 px-4 font-medium text-gray-900">{record.student_username || record.student || 'Unknown'}</td>
+                                                        <td className="py-3 px-4">
+                                                            <span className={`${statusColors[record.status] || ''}`}>
+                                                                {record.status.charAt(0).toUpperCase() + record.status.slice(1)}
+                                                            </span>
                                                         </td>
-                                                        <td className="py-3 px-4 text-gray-400">{formatDate(record.date)}</td>
-                                                        <td className="py-3 px-4 text-gray-400">{formatTime(record.time)}</td>
-                                                        <td className="py-3 px-4 text-gray-400">
+                                                        <td className="py-3 px-4 text-gray-500">{formatDate(record.date)}</td>
+                                                        <td className="py-3 px-4 text-gray-500">{formatTime(record.time)}</td>
+                                                        <td className="py-3 px-4 text-gray-500">
                                                             {(record.confidence_score * 100).toFixed(1)}%
                                                         </td>
                                                     </tr>
@@ -302,6 +280,13 @@ const HostDashboard = () => {
                     </motion.div>
                 )}
             </AnimatePresence>
+
+            {/* Create Session Modal */}
+            <CreateSessionModal
+                isOpen={isModalOpen}
+                onClose={() => setIsModalOpen(false)}
+                onSuccess={fetchEvents}
+            />
         </div>
     );
 };

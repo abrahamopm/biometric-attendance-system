@@ -1,29 +1,12 @@
 import React from 'react';
-import { Outlet, Link, useLocation } from 'react-router-dom';
-import { AnimatePresence, motion } from 'framer-motion';
+import { Outlet } from 'react-router-dom';
+import Sidebar from './Sidebar';
 
 const Layout = () => {
-    const location = useLocation();
-
     return (
         <div className="min-h-screen bg-background text-white flex">
-            {/* Sidebar (simplified for now) */}
-            <nav className="w-64 bg-surface border-r border-gray-800 p-6 hidden md:block overflow-y-auto flex-shrink-0">
-                <div className="mb-10">
-                    <h1 className="text-2xl font-display font-bold text-primary tracking-wider">
-                        BioAttend
-                    </h1>
-                </div>
-                <div className="space-y-4">
-                    <div className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-2 px-4">Student</div>
-                    <NavLink to="/student/dashboard" label="Dashboard" />
-                    <NavLink to="/student/enroll" label="Face Encryption" />
-                    <NavLink to="/attendance/live" label="Live Check-In" />
-
-                    <div className="mt-8 text-xs font-bold text-gray-500 uppercase tracking-widest mb-2 px-4">Host</div>
-                    <NavLink to="/host/dashboard" label="Host Console" />
-                </div>
-            </nav>
+            {/* Sidebar with role-based navigation */}
+            <Sidebar />
 
             {/* Main Content */}
             <main className="flex-1 flex flex-col bg-background min-h-screen">
@@ -38,10 +21,5 @@ const Layout = () => {
     );
 };
 
-const NavLink = ({ to, label }) => (
-    <Link to={to} className="block px-4 py-2 rounded-lg hover:bg-gray-800 transition-colors text-gray-300 hover:text-white">
-        {label}
-    </Link>
-);
-
 export default Layout;
+

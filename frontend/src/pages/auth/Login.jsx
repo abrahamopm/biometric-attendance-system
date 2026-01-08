@@ -42,67 +42,61 @@ const Login = () => {
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ duration: 0.5 }}
-                className="w-full max-w-md bg-surface/50 backdrop-blur-xl border border-white/10 p-8 rounded-2xl shadow-2xl z-10"
+                className="w-full max-w-md bg-white/80 backdrop-blur-xl border border-white/50 p-8 rounded-2xl shadow-xl z-10"
             >
                 <div className="text-center mb-8">
                     <h1 className="text-3xl font-display font-bold text-transparent bg-clip-text bg-gradient-to-r from-primary to-accent mb-2">
                         Welcome Back
                     </h1>
-                    <p className="text-gray-400">Sign in to access your BioAttend portal</p>
+                    <p className="text-gray-600">Sign in to access your BioAttend portal</p>
                 </div>
 
                 <form className="space-y-6" onSubmit={handleSubmit}>
                     {error && <div className="text-red-500 text-sm text-center">{error}</div>}
                     <div className="space-y-2">
-                        <label className="text-sm text-gray-400 ml-1">Username</label>
+                        <label className="text-sm text-gray-600 ml-1">Username</label>
                         <div className="relative group">
-                            <Mail className="absolute left-3 top-3 w-5 h-5 text-gray-500 group-focus-within:text-primary transition-colors" />
+                            <Mail className="absolute left-3 top-3 w-5 h-5 text-gray-400 group-focus-within:text-primary transition-colors" />
                             <input
                                 name="username"
                                 type="text"
                                 placeholder="username"
                                 onChange={handleChange}
-                                className="w-full bg-black/40 border border-white/10 rounded-xl px-10 py-3 text-white placeholder-gray-600 focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/50 transition-all"
+                                className="w-full bg-white border border-gray-200 rounded-xl px-10 py-3 text-tertiary placeholder-gray-400 focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/50 transition-all shadow-sm"
                             />
                         </div>
                     </div>
 
                     <div className="space-y-2">
-                        <label className="text-sm text-gray-400 ml-1">Password</label>
+                        <label className="text-sm text-gray-600 ml-1">Password</label>
                         <div className="relative group">
-                            <Lock className="absolute left-3 top-3 w-5 h-5 text-gray-500 group-focus-within:text-primary transition-colors" />
+                            <Lock className="absolute left-3 top-3 w-5 h-5 text-gray-400 group-focus-within:text-primary transition-colors" />
                             <input
                                 name="password"
                                 type={showPassword ? "text" : "password"}
                                 placeholder="••••••••"
                                 onChange={handleChange}
-                                className="w-full bg-black/40 border border-white/10 rounded-xl px-10 py-3 text-white placeholder-gray-600 focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/50 transition-all"
+                                className="w-full bg-white border border-gray-200 rounded-xl px-10 py-3 text-tertiary placeholder-gray-400 focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/50 transition-all shadow-sm"
                             />
                             <button
                                 type="button"
                                 onClick={() => setShowPassword(!showPassword)}
-                                className="absolute right-3 top-3 text-gray-500 hover:text-white transition-colors"
+                                className="absolute right-3 top-3 text-gray-400 hover:text-primary transition-colors"
                             >
                                 {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                             </button>
                         </div>
-                        {/* FORGOT PASSWORD DISABLED - Email service not configured */}
-                        {/* <div className="flex justify-end">
-                            <Link to="/forgot-password" class="text-xs text-primary hover:text-primary/80 transition-colors">
-                                Forgot password?
-                            </Link>
-                        </div> */}
                     </div>
 
-                    <button type="submit" className="w-full bg-gradient-to-r from-primary to-accent text-white font-bold py-3 rounded-xl hover:shadow-[0_0_20px_rgba(59,130,246,0.5)] transition-all transform hover:scale-[1.02] flex items-center justify-center gap-2">
+                    <button type="submit" className="w-full bg-gradient-to-r from-primary to-accent text-white font-bold py-3 rounded-xl hover:shadow-[0_0_20px_rgba(115,92,221,0.4)] transition-all transform hover:scale-[1.02] flex items-center justify-center gap-2">
                         <span>Sign In</span>
                         <ArrowRight className="w-5 h-5" />
                     </button>
                 </form>
 
-                <div className="mt-8 text-center text-sm text-gray-500">
+                <div className="mt-8 text-center text-sm text-gray-600">
                     Don't have an account?
-                    <Link to="/signup" className="text-white hover:text-primary font-medium ml-1 transition-colors">
+                    <Link to="/signup" className="text-primary hover:text-tertiary font-medium ml-1 transition-colors">
                         Sign Up
                     </Link>
                 </div>
