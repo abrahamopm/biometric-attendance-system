@@ -1,0 +1,17 @@
+# Minimal requirements for PythonAnywhere free tier
+# Install with: pip install -r requirements-pythonanywhere.txt
+
+django
+djangorestframework
+django-cors-headers
+djangorestframework-simplejwt
+Pillow
+numpy
+python-dotenv
+
+# Note: face_recognition requires dlib which needs cmake
+# On PythonAnywhere free tier, use the fallback hash method
+# For real face recognition, upgrade to paid tier and install:
+# cmake
+# dlib
+# face_recognition
