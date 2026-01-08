@@ -1,14 +1,35 @@
-# Python
+# Python / Django
 __pycache__/
-*.pyc
+*.py[cod]
 *.pyo
-
-# Django
-db.sqlite3
+*.pyd
+*.so
+*.egg-info/
+.eggs/
+.build/
+dist/
 *.log
+.env
+*.env
+.env.*
+db.sqlite3
+staticfiles/
 
-# Virtual environment
+# Virtual environments
+.venv/
 venv/
+env/
 
-# VSCode settings
+# Node / Vite / React
+node_modules/
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+
+# Misc
+.DS_Store
+Thumbs.db
 .vscode/
+.idea/
+*.swp
+*.swo
