@@ -14,7 +14,35 @@ const ProfilePage: React.FC = () => {
     const [passwordLoading, setPasswordLoading] = useState(false);
     const [isResetModalOpen, setIsResetModalOpen] = useState(false);
 
-    // ... existing form state and handlers ...
+    const [formData, setFormData] = useState({
+        username: user?.username || '',
+        email: user?.email || '',
+        phone: user?.phone || '',
+    });
+
+    const [passwordData, setPasswordData] = useState({
+        old_password: '',
+        new_password: '',
+        confirm_password: '',
+    });
+
+    useEffect(() => {
+        if (user) {
+            setFormData({
+                username: user.username || '',
+                email: user.email || '',
+                phone: user.phone || '',
+            });
+        }
+    }, [user]);
+
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setFormData({ ...formData, [e.target.name]: e.target.value });
+    };
+
+    const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setPasswordData({ ...passwordData, [e.target.name]: e.target.value });
+    };
 
     const handleProfileUpdate = async (e: React.FormEvent) => {
         // ... existing handleProfileUpdate logic ...
