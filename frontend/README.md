@@ -38,6 +38,18 @@ Notes
 - Face recognition is handled by the backend; this frontend submits base64 images to mark attendance.
 - For production, consider environment‑based API URLs and adding a UI to enable/disable 2FA from the profile.
 
+Project quick reference
+
+- Roles: Hosts manage events and view reports; Students enroll faces and mark live attendance.
+- Frontend routes: Host views under `src/pages/host`, Student views under `src/pages/student`, shared views under `src/pages/common`.
+- Auth flow: Login → optionally 2FA code → tokens saved → profile fetched via `/users/me/`.
+- API endpoints (backend):
+  - `POST /api/auth/signup/`, `POST /api/auth/login/`, `POST /api/auth/2fa/`
+  - `GET /api/users/me/`, `POST /api/users/enable_2fa/`, `POST /api/users/disable_2fa/`
+  - `POST /api/attendance/mark_live/` (student live marking), `POST /api/events/join_event/` (join by code)
+- Config notes: API base URL lives in [frontend/src/api/axios.js](frontend/src/api/axios.js); 401s clear tokens and redirect to `/login`.
+- Troubleshooting: Invalid 2FA codes often mean time drift; ensure device time is synced. 2FA challenges expire in ~5 minutes. Verify backend is running at `http://127.0.0.1:8000` and CORS is enabled.
+
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
 Currently, two official plugins are available:
