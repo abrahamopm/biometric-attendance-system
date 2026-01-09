@@ -19,8 +19,13 @@ export default {
         warning: "#f59e0b", // Amber
       },
       fontFamily: {
-        sans: ['Inter', 'sans-serif'],
-        display: ['Orbitron', 'sans-serif'], // For futuristic headers
+        sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+        display: ['Outfit', 'sans-serif'], // For futuristic headers
+      },
+      borderRadius: {
+        'xl': '0.5rem',      // 8px - tighter than default 12px
+        '2xl': '0.75rem',    // 12px - tighter than default 16px
+        '3xl': '1rem',       // 16px - tighter than default 24px
       }
     },
   },

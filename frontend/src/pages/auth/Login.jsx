@@ -56,10 +56,10 @@ const Login = () => {
                         <motion.div
                             initial={{ opacity: 0, y: -10 }}
                             animate={{ opacity: 1, y: 0 }}
-                            className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-center gap-3 text-red-800 text-sm mb-6"
+                            className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-center gap-3 text-red-800 text-sm mb-6 shadow-sm"
                         >
                             <AlertCircle className="w-5 h-5 flex-shrink-0 text-red-600" />
-                            <span className="whitespace-pre-wrap font-medium">{error}</span>
+                            <span className="font-medium">{error}</span>
                         </motion.div>
                     )}
                     <div className="space-y-2">
