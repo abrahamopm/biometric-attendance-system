@@ -1,4 +1,42 @@
-# React + TypeScript + Vite
+# Biometric Attendance System – Frontend
+
+Project notes (concise)
+
+- Overview: React + Vite app for hosts and students; talks to a Django REST backend at http://127.0.0.1:8000/api.
+- Auth: JWT via SimpleJWT; optional TOTP 2FA. If 2FA is enabled, login returns `2fa_required` + `challenge_id`, then the UI prompts for a 6‑digit code to complete sign‑in.
+- Key features: Live attendance, host dashboards, student face enrollment, reports, profile and security (password + 2FA).
+- Config: API base URL is set in [frontend/src/api/axios.js](frontend/src/api/axios.js).
+
+Quick start
+
+```bash
+# Backend
+cd backend
+pip install -r requirements.txt
+python manage.py migrate
+python manage.py runserver
+
+# Frontend
+cd frontend
+npm install
+npm run dev
+```
+
+2FA basics
+
+- Enable: POST `/api/users/enable_2fa/` after signing in; scan `otpauth_url` in an authenticator app.
+- Login: enter username/password → if prompted, enter the 6‑digit code → tokens are stored and the profile is fetched.
+
+Structure highlights
+
+- Core pages: `src/pages/host` (host views), `src/pages/student` (student views), `src/pages/common` (profile, live attendance).
+- Auth context: [frontend/src/context/AuthContext.jsx](frontend/src/context/AuthContext.jsx) handles login, 2FA verify, profile fetch, and logout.
+- Attendance UI: `src/pages/common/LiveAttendance.jsx` and student features under `src/components/student`.
+
+Notes
+
+- Face recognition is handled by the backend; this frontend submits base64 images to mark attendance.
+- For production, consider environment‑based API URLs and adding a UI to enable/disable 2FA from the profile.
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
