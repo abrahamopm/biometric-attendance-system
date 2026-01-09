@@ -5,32 +5,62 @@
 @tailwind utilities;
 
 @layer base {
+  :root {
+    /* Light Mode: Warm Daybreak */
+    --background: #f8fafc;
+    /* Fallback */
+    --surface: 255 255 255;
+    /* RGB for opacity usage */
+    --primary: #6366f1;
+    --secondary: #8b5cf6;
+    --tertiary: #1e293b;
+
+    --bg-gradient-start: #fdfbfb;
+    --bg-gradient-end: #ebedee;
+  }
+
+  .dark {
+    /* Dark Mode: Deep Aurora */
+    --background: #0f172a;
+    /* Fallback */
+    --surface: 15 23 42;
+    /* Slate 900 RGB */
+    --primary: #818cf8;
+    --secondary: #c084fc;
+    --tertiary: #f1f5f9;
+
+    --bg-gradient-start: #0f172a;
+    --bg-gradient-end: #1e1b4b;
+  }
+
   * {
     box-sizing: border-box;
   }
 
   html {
-    margin: 0;
-    padding: 0;
-    width: 100%;
-    height: 100%;
-    overflow-x: hidden;
+    @apply h-full w-full;
   }
 
   body {
-    margin: 0;
-    padding: 0;
-    width: 100%;
-    min-height: 100vh;
-    overflow-x: hidden;
-    @apply bg-background text-tertiary font-sans antialiased;
+    @apply h-full w-full font-sans antialiased text-tertiary transition-colors duration-500;
+
+    /* The Magical Animated Background */
+    background: linear-gradient(-45deg, var(--bg-gradient-start), var(--bg-gradient-end), #312e81, #4c1d95);
+    background-size: 400% 400%;
+    animation: gradient-x 15s ease infinite;
+  }
+
+  /* Glassmorphism Utilities */
+  .glass {
+    @apply bg-white/70 dark:bg-slate-900/70 backdrop-blur-lg border border-white/20 dark:border-white/10 shadow-xl;
+  }
+
+  .glass-card {
+    @apply bg-white/40 dark:bg-slate-900/40 backdrop-blur-md border border-white/30 dark:border-white/5 shadow-lg rounded-2xl;
   }
 
   #root {
-    width: 100%;
-    min-height: 100vh;
-    background-color: #F1F7ED;
-    /* Mint Cream fallback */
+    @apply min-h-screen w-full;
   }
 
   h1,
@@ -39,6 +69,6 @@
   h4,
   h5,
   h6 {
-    @apply font-display tracking-wide;
+    @apply font-display tracking-tight;
   }
 }

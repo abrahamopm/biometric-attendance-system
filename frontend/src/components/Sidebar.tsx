@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
     LayoutDashboard,
     Calendar,
@@ -11,7 +12,10 @@ import {
     History,
     Camera,
     LogOut,
-    X
+    X,
+    ChevronLeft,
+    ChevronRight,
+    Zap
 } from 'lucide-react';
 
 interface NavItem {
@@ -22,10 +26,17 @@ interface NavItem {
 
 interface SidebarProps {
     isOpen?: boolean;
+    isCollapsed?: boolean;
     onClose?: () => void;
+    toggleCollapse?: () => void;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ isOpen = false, onClose }) => {
+const Sidebar: React.FC<SidebarProps> = ({
+    isOpen = false,
+    isCollapsed = false,
+    onClose,
+    toggleCollapse
+}) => {
     const { user, logout, loading } = useAuth() as any;
     const location = useLocation();
     const navigate = useNavigate();
@@ -52,74 +63,100 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen = false, onClose }) => {
         navigate('/login');
     };
 
-    if (loading) {
-        return (
-            <nav className="w-64 bg-surface border-r border-gray-800 p-6 hidden md:block overflow-y-auto flex-shrink-0">
-                <div className="mb-10">
-                    <div className="h-8 w-32 bg-gray-800 rounded animate-pulse"></div>
-                </div>
-                <div className="space-y-3">
-                    {[1, 2, 3, 4, 5].map((i) => (
-                        <div key={i} className="h-10 bg-gray-800 rounded animate-pulse"></div>
-                    ))}
-                </div>
-            </nav>
-        );
-    }
+    const sidebarVariants = {
+        expanded: { width: 280 },
+        collapsed: { width: 80 }
+    };
+
+    if (loading) return null;
 
     return (
         <>
             {/* Mobile Overlay */}
-            {isOpen && (
-                <div
-                    className="fixed inset-0 bg-black/50 z-40 md:hidden backdrop-blur-sm"
-                    onClick={onClose}
-                />
-            )}
+            <AnimatePresence>
+                {isOpen && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 bg-black/50 z-40 md:hidden backdrop-blur-sm"
+                        onClick={onClose}
+                    />
+                )}
+            </AnimatePresence>
 
-            <nav className={`
-                w-64 bg-surface dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 p-6
-                flex-col overflow-y-auto flex-shrink-0 transition-transform duration-300 ease-in-out
-                fixed md:relative inset-y-0 left-0 z-50
-                ${isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
-                flex h-screen md:h-auto
-            `}>
-                {/* Close Button (Mobile) */}
-                <button
-                    onClick={onClose}
-                    className="absolute top-4 right-4 p-2 md:hidden text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-                >
-                    <X className="w-5 h-5" />
-                </button>
-
-                {/* Logo */}
-                <div className="mb-10 mt-2 md:mt-0">
-                    <h1 className="text-2xl font-display font-bold text-primary tracking-wider">
-                        MAHS
-                    </h1>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                        {user?.role === 'host' ? 'Host Portal' : 'Student Portal'}
-                    </p>
+            <motion.nav
+                initial={false}
+                animate={/* Mobile vs Desktop logic handled by layout classes mostly, but width animates here for desktop */
+                    isCollapsed ? "collapsed" : "expanded"
+                }
+                variants={sidebarVariants}
+                transition={{ duration: 0.4, type: "spring", stiffness: 100, damping: 20 }}
+                className={`
+                    fixed md:relative inset-y-0 left-0 z-50
+                    bg-white dark:bg-gray-900 
+                    border-r border-gray-200 dark:border-gray-800 
+                    flex flex-col h-full
+                    md:translate-x-0
+                    ${isOpen ? 'translate-x-0' : '-translate-x-full'}
+                    transition-transform md:transition-none duration-300
+                    shadow-2xl md:shadow-none
+                    overflow-x-hidden
+                `}
+            >
+                {/* Background Decor */}
+                <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none opacity-20">
+                    <div className="absolute -top-20 -left-20 w-64 h-64 bg-primary/20 rounded-full blur-3xl animate-pulse" />
                 </div>
 
-                {/* User Info */}
-                <div className="mb-8 pb-6 border-b border-gray-200 dark:border-gray-700">
-                    <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-primary/20 dark:bg-primary/30 rounded-full flex items-center justify-center">
-                            <User className="w-5 h-5 text-primary" />
+                {/* Header */}
+                <div className={`p-6 flex items-center ${isCollapsed ? 'justify-center' : 'justify-between'} relative z-10`}>
+                    <motion.div
+                        layout
+                        className="flex items-center gap-2 overflow-hidden"
+                    >
+                        <div className="w-10 h-10 bg-gradient-to-br from-primary to-purple-600 rounded-xl flex items-center justify-center shadow-lg shadow-primary/20">
+                            <Zap className="w-6 h-6 text-white" fill="white" />
                         </div>
-                        <div className="flex-1 min-w-0">
-                            <p className="font-bold text-sm truncate">{user?.username}</p>
-                            <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{user?.email}</p>
-                        </div>
-                    </div>
+                        {!isCollapsed && (
+                            <motion.div
+                                initial={{ opacity: 0, x: -10 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                exit={{ opacity: 0 }}
+                                className="whitespace-nowrap"
+                            >
+                                <h1 className="text-xl font-display font-bold text-gray-900 dark:text-white tracking-tight">
+                                    MAHS
+                                </h1>
+                                <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Attendance</p>
+                            </motion.div>
+                        )}
+                    </motion.div>
+
+
+                    {/* Close (Mobile) */}
+                    <button onClick={onClose} className="md:hidden text-gray-500">
+                        <X />
+                    </button>
                 </div>
 
-                {/* Navigation Menu */}
-                <div className="space-y-2 flex-1">
-                    <div className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-3 px-3">
-                        Navigation
+                {/* User Card (Mini) */}
+                <div className={`mx-4 mb-6 p-2 rounded-xl bg-gray-50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-700/50 flex items-center ${isCollapsed ? 'justify-center' : 'gap-3'} relative z-10 transition-all duration-300`}>
+                    <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center border border-primary/20">
+                        <User className="w-4 h-4 text-primary" />
                     </div>
+                    {!isCollapsed && (
+                        <div className="min-w-0 flex-1">
+                            <p className="text-sm font-bold text-gray-900 dark:text-white truncate">{user?.username}</p>
+                            <p className="text-xs text-gray-500 truncate capitalize">{user?.role}</p>
+                        </div>
+                    )}
+                </div>
+
+                {/* Items */}
+                <div className="flex-1 overflow-y-auto px-3 space-y-1 custom-scrollbar">
+                    {!isCollapsed && <p className="px-3 text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2 sticky top-0">Menu</p>}
+
                     {menuItems.map((item) => {
                         const isActive = location.pathname === item.path;
                         const Icon = item.icon;
@@ -128,33 +165,59 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen = false, onClose }) => {
                             <Link
                                 key={item.path}
                                 to={item.path}
-                                onClick={() => onClose && onClose()}
                                 className={`
-                                    flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all
+                                    relative flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200 group
                                     ${isActive
-                                        ? 'bg-primary/10 text-primary border border-primary/30'
-                                        : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-primary border border-transparent'
+                                        ? 'bg-primary text-white shadow-lg shadow-primary/30'
+                                        : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white'
                                     }
+                                    ${isCollapsed ? 'justify-center' : ''}
                                 `}
                             >
-                                <Icon className="w-5 h-5 flex-shrink-0" />
-                                <span className="font-medium text-sm">{item.label}</span>
+                                {isActive && (
+                                    <motion.div
+                                        layoutId="active-indicator"
+                                        className="absolute inset-0 bg-primary rounded-xl z-0"
+                                        initial={false}
+                                        transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                                    />
+                                )}
+
+                                <Icon className={`w-5 h-5 relative z-10 transition-transform group-hover:scale-110 ${isActive ? 'text-white' : ''}`} />
+
+                                {!isCollapsed && (
+                                    <span className={`text-sm font-medium relative z-10 whitespace-nowrap`}>
+                                        {item.label}
+                                    </span>
+                                )}
+
+                                {/* Hover Tooltip for Collapsed Mode */}
+                                {isCollapsed && (
+                                    <div className="absolute left-full ml-4 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50 whitespace-nowrap shadow-xl">
+                                        {item.label}
+                                        <div className="absolute left-0 top-1/2 -translate-x-1 -translate-y-1/2 w-2 h-2 bg-gray-900 rotate-45 transform" />
+                                    </div>
+                                )}
                             </Link>
                         );
                     })}
                 </div>
 
-                {/* Logout Button */}
-                <div className="mt-auto pt-6 border-t border-gray-200 dark:border-gray-700">
+                {/* Footer / Logout */}
+                <div className="p-4 border-t border-gray-100 dark:border-gray-800 relative z-10">
                     <button
                         onClick={handleLogout}
-                        className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-red-500/10 hover:text-red-500 transition-all border border-transparent hover:border-red-500/30"
+                        className={`
+                            w-full flex items-center rounded-xl p-3 transition-colors
+                            ${isCollapsed ? 'justify-center' : 'gap-3'}
+                            text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20
+                        `}
                     >
                         <LogOut className="w-5 h-5" />
-                        <span className="font-medium text-sm">Logout</span>
+                        {!isCollapsed && <span className="font-medium text-sm">Logout</span>}
                     </button>
                 </div>
-            </nav>
+            </motion.nav>
         </>
     );
 };
