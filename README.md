@@ -130,13 +130,13 @@ npm run dev
 
 ## 📸 **Screenshots**
 
-| **Dashboard** | **Login Page** |
+| **Dashboard (Light)** | **Login Page** |
 |:---:|:---:|
-| <img src="https://placehold.co/600x400/png?text=Dashboard+Preview" alt="Dashboard" width="100%"> | <img src="https://placehold.co/600x400/png?text=Login+Page+Preview" alt="Login Page" width="100%"> |
+| <img src="assets/dashboard-light.png" alt="Dashboard Light" width="100%"> | <img src="assets/login.png" alt="Login Page" width="100%"> |
 
-| **Attendance Scanning** | **User Profile** |
+| **Dashboard (Dark)** | **Sidebar Collapsed** |
 |:---:|:---:|
-| <img src="https://placehold.co/600x400/png?text=Scanning+Interface" alt="Scanning" width="100%"> | <img src="https://placehold.co/600x400/png?text=User+Profile" alt="Profile" width="100%"> |
+| <img src="assets/dashboard-dark.png" alt="Dashboard Dark" width="100%"> | <img src="assets/sidebar-collapsed.png" alt="Sidebar Collapsed" width="100%"> |
 
 ---
 
