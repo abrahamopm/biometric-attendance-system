@@ -1,0 +1,64 @@
+# OS-specific
+.DS_Store
+Thumbs.db
+
+# Editor and tooling
+.vscode/
+.idea/
+*.code-workspace
+.history/
+
+# Python / Django
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+*.egg-info/
+.eggs/
+.build/
+dist/
+*.log
+.env
+*.env
+.env.*
+
+# Virtual environments
+.env/
+venv/
+.venv/
+env/
+
+# Django artifacts
+*.sqlite3
+*.db
+*/db.sqlite3
+media/
+staticfiles/
+static/
+
+# Test and coverage
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.cache/
+
+# Node / Vite / React
+node_modules/
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+
+# Logs and debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# TypeScript
+*.tsbuildinfo
+
+# Misc
+*.swp
+*.swo
