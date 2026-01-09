@@ -8,6 +8,18 @@ import { useNotification } from '../../context/NotificationContext';
 import { useAuth } from '../../context/AuthContext';
 import ConfirmModal from '../../components/ConfirmModal';
 
+const POSITIVE_MESSAGES = [
+    "You look fantastic today! 🌟",
+    "Ready to conquer the world! 🚀",
+    "That smile is contagious! 😊",
+    "Looking sharp! 👔",
+    "Attendance is going to be a breeze! 💨",
+    "Welcome to the future of attendance! 🤖",
+    "Great shot! 📸",
+    "You are glowing! ✨",
+    "Confidence looks good on you! 💪"
+];
+
 const FaceEnroll = () => {
     const webcamRef = useRef(null);
     const navigate = useNavigate();
@@ -18,6 +30,7 @@ const FaceEnroll = () => {
     const [capturedImage, setCapturedImage] = useState(null);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [cameraError, setCameraError] = useState(null);
+    const [successMessage, setSuccessMessage] = useState("Verified!");
 
     const handleUserMedia = useCallback(() => {
         setCameraError(null);
@@ -55,6 +68,10 @@ const FaceEnroll = () => {
                 image: base64Data
             });
 
+            // Select random message
+            const randomMsg = POSITIVE_MESSAGES[Math.floor(Math.random() * POSITIVE_MESSAGES.length)];
+            setSuccessMessage(randomMsg);
+
             setStatus('success');
             success('Face enrolled successfully!');
             await refreshUserProfile();
@@ -62,7 +79,7 @@ const FaceEnroll = () => {
             // Delay redirect to let user see success state
             setTimeout(() => {
                 navigate('/student/dashboard');
-            }, 2000);
+            }, 3000); // Increased time slightly to read message
 
         } catch (error) {
             console.error('Enrollment error:', error);
@@ -98,8 +115,8 @@ const FaceEnroll = () => {
             <div className="max-w-4xl w-full space-y-8">
                 {/* Header */}
                 <div className="text-center space-y-2">
-                    <h1 className="text-3xl font-display font-bold text-gray-900">Face Enrollment</h1>
-                    <p className="text-gray-500 max-w-lg mx-auto">
+                    <h1 className="text-3xl font-display font-bold text-gray-900 dark:text-white">Face Enrollment</h1>
+                    <p className="text-gray-500 dark:text-gray-400 max-w-lg mx-auto">
                         Register your face to enable contactless attendance. Ensure you are in a well-lit area and face the camera directly.
                     </p>
                 </div>
@@ -164,15 +181,35 @@ const FaceEnroll = () => {
                         )}
                         {status === 'success' && (
                             <motion.div
-                                initial={{ opacity: 0 }}
-                                animate={{ opacity: 1 }}
+                                initial={{ opacity: 0, scale: 0.9 }}
+                                animate={{ opacity: 1, scale: 1 }}
                                 exit={{ opacity: 0 }}
-                                className="absolute inset-0 bg-green-500/20 backdrop-blur-md flex flex-col items-center justify-center z-10"
+                                className="absolute inset-0 bg-primary/90 backdrop-blur-md flex flex-col items-center justify-center z-10 p-6 text-center"
                             >
-                                <div className="bg-green-500 text-white p-4 rounded-full mb-4 shadow-lg shadow-green-500/30">
+                                <motion.div
+                                    initial={{ scale: 0 }}
+                                    animate={{ scale: 1, rotate: [0, 10, -10, 0] }}
+                                    transition={{ type: "spring", stiffness: 200, delay: 0.2 }}
+                                    className="bg-white text-primary p-4 rounded-full mb-6 shadow-xl"
+                                >
                                     <Check className="w-12 h-12" />
-                                </div>
-                                <h3 className="text-2xl font-bold text-white shadow-black/20 drop-shadow-md">Verified!</h3>
+                                </motion.div>
+                                <motion.h3
+                                    initial={{ y: 20, opacity: 0 }}
+                                    animate={{ y: 0, opacity: 1 }}
+                                    transition={{ delay: 0.3 }}
+                                    className="text-3xl font-display font-bold text-white mb-2 drop-shadow-md"
+                                >
+                                    Saved!
+                                </motion.h3>
+                                <motion.p
+                                    initial={{ y: 20, opacity: 0 }}
+                                    animate={{ y: 0, opacity: 1 }}
+                                    transition={{ delay: 0.5 }}
+                                    className="text-xl text-white/90 font-medium"
+                                >
+                                    {successMessage}
+                                </motion.p>
                             </motion.div>
                         )}
                     </AnimatePresence>
