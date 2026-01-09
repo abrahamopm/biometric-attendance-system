@@ -11,6 +11,8 @@ const Login = () => {
     const [formData, setFormData] = useState({ username: '', password: '' });
     const [error, setError] = useState(null);
     const [twoFA, setTwoFA] = useState({ required: false, challengeId: null, method: 'totp', code: '' });
+    const [submitting, setSubmitting] = useState(false);
+    const [verifying, setVerifying] = useState(false);
     const { login, verify2FA } = useAuth();
     const navigate = useNavigate();
 
@@ -21,7 +23,15 @@ const Login = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError(null);
-        const result = await login(formData.username, formData.password);
+        setSubmitting(true);
+        const username = formData.username.trim();
+        const password = formData.password;
+        if (!username || !password) {
+            setError('Username and password are required');
+            setSubmitting(false);
+            return;
+        }
+        const result = await login(username, password);
         if (result.success) {
             if (result.role === 'host') {
                 navigate('/host/dashboard');
@@ -33,12 +43,20 @@ const Login = () => {
         } else {
             setError(result.message);
         }
+        setSubmitting(false);
     };
 
     const handleVerify2FA = async (e) => {
         e.preventDefault();
         setError(null);
-        const res = await verify2FA(twoFA.challengeId, twoFA.code);
+        setVerifying(true);
+        const code = (twoFA.code || '').trim();
+        if (!code) {
+            setError('Enter the 6-digit code');
+            setVerifying(false);
+            return;
+        }
+        const res = await verify2FA(twoFA.challengeId, code);
         if (res.success) {
             if (res.role === 'host') {
                 navigate('/host/dashboard');
@@ -48,6 +66,7 @@ const Login = () => {
         } else {
             setError(res.message);
         }
+        setVerifying(false);
     };
 
     return (
@@ -116,8 +135,12 @@ const Login = () => {
                             </div>
                         </div>
 
-                        <button type="submit" className="w-full bg-gradient-to-r from-primary to-accent text-white font-bold py-3 rounded-xl hover:shadow-[0_0_20px_rgba(115,92,221,0.4)] transition-all transform hover:scale-[1.02] flex items-center justify-center gap-2">
-                            <span>Sign In</span>
+                        <button
+                            type="submit"
+                            disabled={submitting}
+                            className="w-full bg-gradient-to-r from-primary to-accent text-white font-bold py-3 rounded-xl hover:shadow-[0_0_20px_rgba(115,92,221,0.4)] transition-all transform hover:scale-[1.02] flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
+                        >
+                            <span>{submitting ? 'Signing In...' : 'Sign In'}</span>
                             <ArrowRight className="w-5 h-5" />
                         </button>
                     </form>
@@ -152,8 +175,12 @@ const Login = () => {
                             </div>
                             <p className="text-xs text-gray-500 ml-1">Enter the 6-digit code from your authenticator app.</p>
                         </div>
-                        <button type="submit" className="w-full bg-gradient-to-r from-primary to-accent text-white font-bold py-3 rounded-xl hover:shadow-[0_0_20px_rgba(115,92,221,0.4)] transition-all transform hover:scale-[1.02] flex items-center justify-center gap-2">
-                            <span>Verify & Sign In</span>
+                        <button
+                            type="submit"
+                            disabled={verifying}
+                            className="w-full bg-gradient-to-r from-primary to-accent text-white font-bold py-3 rounded-xl hover:shadow-[0_0_20px_rgba(115,92,221,0.4)] transition-all transform hover:scale-[1.02] flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
+                        >
+                            <span>{verifying ? 'Verifying...' : 'Verify & Sign In'}</span>
                             <ArrowRight className="w-5 h-5" />
                         </button>
                     </form>
