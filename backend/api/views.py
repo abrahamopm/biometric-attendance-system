@@ -6,6 +6,7 @@ from django.contrib.auth import authenticate
 from django.conf import settings
 from django.core.mail import send_mail
 from django.utils import timezone
+from django.core.cache import cache
 from .models import User, Event, AttendanceRecord, Enrollment, EmailVerificationToken
 from .serializers import UserSerializer, EventSerializer, AttendanceSerializer, EnrollmentSerializer
 from .services.face_service import (
@@ -19,6 +20,7 @@ import string
 import datetime
 import secrets
 import logging
+import pyotp
 
 logger = logging.getLogger(__name__)
 # from django.shortcuts import get_object_or_404 -> Not needed if we catch DoesNotExist
@@ -67,9 +69,17 @@ class AuthViewSet(viewsets.ViewSet):
         username = request.data.get('username')
         password = request.data.get('password')
         user = authenticate(username=username, password=password)
-        
         if user:
-            # Check 2FA or Email Verification here
+            # If user has 2FA enabled (secret set), require TOTP verification
+            if getattr(user, 'two_factor_secret', ''):
+                challenge_id = secrets.token_urlsafe(24)
+                cache.set(f"2fa:challenge:{challenge_id}", user.id, timeout=300)  # 5 minutes
+                return Response({
+                    '2fa_required': True,
+                    'method': 'totp',
+                    'challenge_id': challenge_id
+                }, status=status.HTTP_200_OK)
+            # No 2FA -> issue tokens immediately
             refresh = RefreshToken.for_user(user)
             return Response({
                 'refresh': str(refresh),
@@ -105,8 +115,58 @@ class AuthViewSet(viewsets.ViewSet):
     #     return Response({"message": "Email verified"})
 
     def verify_2fa(self, request):
-        # Implementation placeholder
-        return Response({"message": "2FA verified"})
+        code = request.data.get('code')
+        challenge_id = request.data.get('challenge_id')
+        if not code or not challenge_id:
+            return Response({"error": "Missing code or challenge_id"}, status=status.HTTP_400_BAD_REQUEST)
+
+        user_id = cache.get(f"2fa:challenge:{challenge_id}")
+        if not user_id:
+            return Response({"error": "Invalid or expired challenge"}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            user = User.objects.get(id=user_id)
+        except User.DoesNotExist:
+            return Response({"error": "User not found for challenge"}, status=status.HTTP_400_BAD_REQUEST)
+
+        if not getattr(user, 'two_factor_secret', ''):
+            return Response({"error": "2FA not enabled for user"}, status=status.HTTP_400_BAD_REQUEST)
+
+        totp = pyotp.TOTP(user.two_factor_secret)
+        if not totp.verify(str(code), valid_window=1):
+            return Response({"error": "Invalid 2FA code"}, status=status.HTTP_401_UNAUTHORIZED)
+
+        # Success -> delete challenge and issue tokens
+        cache.delete(f"2fa:challenge:{challenge_id}")
+        refresh = RefreshToken.for_user(user)
+        return Response({
+            'refresh': str(refresh),
+            'access': str(refresh.access_token),
+            'role': user.role
+        })
+    @action(detail=False, methods=['post'])
+    def enable_2fa(self, request):
+        user = request.user
+        # Generate new secret and store
+        secret = pyotp.random_base32()
+        user.two_factor_secret = secret
+        user.save(update_fields=["two_factor_secret"])
+
+        # Use email if available, else username
+        account_name = user.email or user.username
+        issuer = getattr(settings, 'PROJECT_NAME', 'BiometricAttendance')
+        uri = pyotp.totp.TOTP(secret).provisioning_uri(name=account_name, issuer_name=issuer)
+        return Response({
+            "secret": secret,
+            "otpauth_url": uri
+        })
+
+    @action(detail=False, methods=['post'])
+    def disable_2fa(self, request):
+        user = request.user
+        user.two_factor_secret = ""
+        user.save(update_fields=["two_factor_secret"])
+        return Response({"message": "2FA disabled"})
 
 class EventViewSet(viewsets.ModelViewSet):
     serializer_class = EventSerializer

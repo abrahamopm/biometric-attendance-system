@@ -48,15 +48,15 @@ export const AuthProvider = ({ children }) => {
 
     const formatError = (errorResponse) => {
         if (!errorResponse) return "An unexpected error occurred.";
-        
+
         // Handle simple string error
         if (typeof errorResponse === 'string') return errorResponse;
-        
+
         // Handle DRF standard error formats
         if (errorResponse.detail) return errorResponse.detail;
         if (errorResponse.error) return errorResponse.error;
         if (errorResponse.message) return errorResponse.message;
-        
+
         // Handle field validation errors (e.g., {"username": ["field required"]})
         if (typeof errorResponse === 'object') {
             const messages = [];
@@ -74,19 +74,24 @@ export const AuthProvider = ({ children }) => {
             }
             if (messages.length > 0) return messages.join('\n');
         }
-        
+
         return "An unexpected error occurred. Please try again.";
     };
 
     const login = async (username, password) => {
         try {
             const response = await api.post('/auth/login/', { username, password });
-            const { access, refresh, role } = response.data;
-
+            if (response.data?.twofa_required || response.data?.['2fa_required']) {
+                return {
+                    success: false,
+                    twoFARequired: true,
+                    method: response.data.method || 'totp',
+                    challengeId: response.data.challenge_id,
+                };
+            }
+            const { access, refresh } = response.data;
             localStorage.setItem('token', access);
             localStorage.setItem('refresh', refresh);
-
-            // Fetch full user profile after login
             const userData = await fetchUserProfile();
             if (userData) {
                 return { success: true, role: userData.role };
@@ -99,6 +104,23 @@ export const AuthProvider = ({ children }) => {
                 success: false,
                 message: errorMsg
             };
+        }
+    };
+
+    const verify2FA = async (challengeId, code) => {
+        try {
+            const response = await api.post('/auth/2fa/', { challenge_id: challengeId, code });
+            const { access, refresh } = response.data;
+            localStorage.setItem('token', access);
+            localStorage.setItem('refresh', refresh);
+            const userData = await fetchUserProfile();
+            if (userData) {
+                return { success: true, role: userData.role };
+            }
+            return { success: false, message: "Failed to fetch user profile" };
+        } catch (error) {
+            const errorMsg = formatError(error.response?.data);
+            return { success: false, message: errorMsg };
         }
     };
 
@@ -128,7 +150,7 @@ export const AuthProvider = ({ children }) => {
     };
 
     return (
-        <AuthContext.Provider value={{ user, login, signup, logout, loading, refreshUserProfile }}>
+        <AuthContext.Provider value={{ user, login, signup, logout, loading, refreshUserProfile, verify2FA }}>
             {!loading && children}
         </AuthContext.Provider>
     );

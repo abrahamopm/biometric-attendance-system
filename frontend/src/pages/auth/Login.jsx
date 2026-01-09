@@ -10,7 +10,8 @@ const Login = () => {
     const [showPassword, setShowPassword] = useState(false);
     const [formData, setFormData] = useState({ username: '', password: '' });
     const [error, setError] = useState(null);
-    const { login } = useAuth();
+    const [twoFA, setTwoFA] = useState({ required: false, challengeId: null, method: 'totp', code: '' });
+    const { login, verify2FA } = useAuth();
     const navigate = useNavigate();
 
     const handleChange = (e) => {
@@ -27,8 +28,25 @@ const Login = () => {
             } else {
                 navigate('/student/dashboard');
             }
+        } else if (result.twoFARequired) {
+            setTwoFA({ required: true, challengeId: result.challengeId, method: result.method || 'totp', code: '' });
         } else {
             setError(result.message);
+        }
+    };
+
+    const handleVerify2FA = async (e) => {
+        e.preventDefault();
+        setError(null);
+        const res = await verify2FA(twoFA.challengeId, twoFA.code);
+        if (res.success) {
+            if (res.role === 'host') {
+                navigate('/host/dashboard');
+            } else {
+                navigate('/student/dashboard');
+            }
+        } else {
+            setError(res.message);
         }
     };
 
@@ -51,64 +69,104 @@ const Login = () => {
                     <p className="text-gray-600">Sign in to access your BioAttend portal</p>
                 </div>
 
-                <form className="space-y-6" onSubmit={handleSubmit}>
-                    {error && (
-                        <motion.div
-                            initial={{ opacity: 0, y: -10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-center gap-3 text-red-800 text-sm mb-6 shadow-sm"
-                        >
-                            <AlertCircle className="w-5 h-5 flex-shrink-0 text-red-600" />
-                            <span className="font-medium">{error}</span>
-                        </motion.div>
-                    )}
-                    <div className="space-y-2">
-                        <label className="text-sm text-gray-600 ml-1">Username</label>
-                        <div className="relative group">
-                            <Mail className="absolute left-3 top-3 w-5 h-5 text-gray-400 group-focus-within:text-primary transition-colors" />
-                            <input
-                                name="username"
-                                type="text"
-                                placeholder="username"
-                                onChange={handleChange}
-                                className="w-full bg-white border border-gray-200 rounded-xl px-10 py-3 text-tertiary placeholder-gray-400 focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/50 transition-all shadow-sm"
-                            />
-                        </div>
-                    </div>
-
-                    <div className="space-y-2">
-                        <label className="text-sm text-gray-600 ml-1">Password</label>
-                        <div className="relative group">
-                            <Lock className="absolute left-3 top-3 w-5 h-5 text-gray-400 group-focus-within:text-primary transition-colors" />
-                            <input
-                                name="password"
-                                type={showPassword ? "text" : "password"}
-                                placeholder="••••••••"
-                                onChange={handleChange}
-                                className="w-full bg-white border border-gray-200 rounded-xl px-10 py-3 text-tertiary placeholder-gray-400 focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/50 transition-all shadow-sm"
-                            />
-                            <button
-                                type="button"
-                                onClick={() => setShowPassword(!showPassword)}
-                                className="absolute right-3 top-3 text-gray-400 hover:text-primary transition-colors"
+                {!twoFA.required && (
+                    <form className="space-y-6" onSubmit={handleSubmit}>
+                        {error && (
+                            <motion.div
+                                initial={{ opacity: 0, y: -10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-center gap-3 text-red-800 text-sm mb-6 shadow-sm"
                             >
-                                {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                            </button>
+                                <AlertCircle className="w-5 h-5 flex-shrink-0 text-red-600" />
+                                <span className="font-medium">{error}</span>
+                            </motion.div>
+                        )}
+                        <div className="space-y-2">
+                            <label className="text-sm text-gray-600 ml-1">Username</label>
+                            <div className="relative group">
+                                <Mail className="absolute left-3 top-3 w-5 h-5 text-gray-400 group-focus-within:text-primary transition-colors" />
+                                <input
+                                    name="username"
+                                    type="text"
+                                    placeholder="username"
+                                    onChange={handleChange}
+                                    className="w-full bg-white border border-gray-200 rounded-xl px-10 py-3 text-tertiary placeholder-gray-400 focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/50 transition-all shadow-sm"
+                                />
+                            </div>
                         </div>
+
+                        <div className="space-y-2">
+                            <label className="text-sm text-gray-600 ml-1">Password</label>
+                            <div className="relative group">
+                                <Lock className="absolute left-3 top-3 w-5 h-5 text-gray-400 group-focus-within:text-primary transition-colors" />
+                                <input
+                                    name="password"
+                                    type={showPassword ? "text" : "password"}
+                                    placeholder="••••••••"
+                                    onChange={handleChange}
+                                    className="w-full bg-white border border-gray-200 rounded-xl px-10 py-3 text-tertiary placeholder-gray-400 focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/50 transition-all shadow-sm"
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => setShowPassword(!showPassword)}
+                                    className="absolute right-3 top-3 text-gray-400 hover:text-primary transition-colors"
+                                >
+                                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                                </button>
+                            </div>
+                        </div>
+
+                        <button type="submit" className="w-full bg-gradient-to-r from-primary to-accent text-white font-bold py-3 rounded-xl hover:shadow-[0_0_20px_rgba(115,92,221,0.4)] transition-all transform hover:scale-[1.02] flex items-center justify-center gap-2">
+                            <span>Sign In</span>
+                            <ArrowRight className="w-5 h-5" />
+                        </button>
+                    </form>
+                )}
+
+                {twoFA.required && (
+                    <form className="space-y-6" onSubmit={handleVerify2FA}>
+                        {error && (
+                            <motion.div
+                                initial={{ opacity: 0, y: -10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-center gap-3 text-red-800 text-sm mb-6 shadow-sm"
+                            >
+                                <AlertCircle className="w-5 h-5 flex-shrink-0 text-red-600" />
+                                <span className="font-medium">{error}</span>
+                            </motion.div>
+                        )}
+                        <div className="space-y-2">
+                            <label className="text-sm text-gray-600 ml-1">Two-Factor Code</label>
+                            <div className="relative group">
+                                <Lock className="absolute left-3 top-3 w-5 h-5 text-gray-400 group-focus-within:text-primary transition-colors" />
+                                <input
+                                    name="code"
+                                    type="text"
+                                    inputMode="numeric"
+                                    pattern="[0-9]*"
+                                    placeholder="123456"
+                                    value={twoFA.code}
+                                    onChange={(e) => setTwoFA({ ...twoFA, code: e.target.value })}
+                                    className="w-full bg-white border border-gray-200 rounded-xl px-10 py-3 text-tertiary placeholder-gray-400 focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/50 transition-all shadow-sm tracking-widest"
+                                />
+                            </div>
+                            <p className="text-xs text-gray-500 ml-1">Enter the 6-digit code from your authenticator app.</p>
+                        </div>
+                        <button type="submit" className="w-full bg-gradient-to-r from-primary to-accent text-white font-bold py-3 rounded-xl hover:shadow-[0_0_20px_rgba(115,92,221,0.4)] transition-all transform hover:scale-[1.02] flex items-center justify-center gap-2">
+                            <span>Verify & Sign In</span>
+                            <ArrowRight className="w-5 h-5" />
+                        </button>
+                    </form>
+                )}
+
+                {!twoFA.required && (
+                    <div className="mt-8 text-center text-sm text-gray-600">
+                        Don't have an account?
+                        <Link to="/signup" className="text-primary hover:text-tertiary font-medium ml-1 transition-colors">
+                            Sign Up
+                        </Link>
                     </div>
-
-                    <button type="submit" className="w-full bg-gradient-to-r from-primary to-accent text-white font-bold py-3 rounded-xl hover:shadow-[0_0_20px_rgba(115,92,221,0.4)] transition-all transform hover:scale-[1.02] flex items-center justify-center gap-2">
-                        <span>Sign In</span>
-                        <ArrowRight className="w-5 h-5" />
-                    </button>
-                </form>
-
-                <div className="mt-8 text-center text-sm text-gray-600">
-                    Don't have an account?
-                    <Link to="/signup" className="text-primary hover:text-tertiary font-medium ml-1 transition-colors">
-                        Sign Up
-                    </Link>
-                </div>
+                )}
             </motion.div>
         </div>
     );
