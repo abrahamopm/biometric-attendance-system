@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import { Mail, Lock, Eye, EyeOff, ArrowRight } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, ArrowRight, AlertCircle } from 'lucide-react';
 
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
@@ -52,7 +52,16 @@ const Login = () => {
                 </div>
 
                 <form className="space-y-6" onSubmit={handleSubmit}>
-                    {error && <div className="text-red-500 text-sm text-center">{error}</div>}
+                    {error && (
+                        <motion.div
+                            initial={{ opacity: 0, y: -10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-center gap-3 text-red-800 text-sm mb-6"
+                        >
+                            <AlertCircle className="w-5 h-5 flex-shrink-0 text-red-600" />
+                            <span className="whitespace-pre-wrap font-medium">{error}</span>
+                        </motion.div>
+                    )}
                     <div className="space-y-2">
                         <label className="text-sm text-gray-600 ml-1">Username</label>
                         <div className="relative group">

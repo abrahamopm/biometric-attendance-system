@@ -46,6 +46,38 @@ export const AuthProvider = ({ children }) => {
         }
     }, []);
 
+    const formatError = (errorResponse) => {
+        if (!errorResponse) return "An unexpected error occurred.";
+        
+        // Handle simple string error
+        if (typeof errorResponse === 'string') return errorResponse;
+        
+        // Handle DRF standard error formats
+        if (errorResponse.detail) return errorResponse.detail;
+        if (errorResponse.error) return errorResponse.error;
+        if (errorResponse.message) return errorResponse.message;
+        
+        // Handle field validation errors (e.g., {"username": ["field required"]})
+        if (typeof errorResponse === 'object') {
+            const messages = [];
+            for (const key in errorResponse) {
+                const value = errorResponse[key];
+                // Skip non-error technical fields if any
+                if (Array.isArray(value)) {
+                    // "username": ["This field is required."] -> "Username: This field is required."
+                    const formattedKey = key.charAt(0).toUpperCase() + key.slice(1).replace('_', ' ');
+                    messages.push(`${formattedKey}: ${value.join(', ')}`);
+                } else if (typeof value === 'string') {
+                    const formattedKey = key.charAt(0).toUpperCase() + key.slice(1).replace('_', ' ');
+                    messages.push(`${formattedKey}: ${value}`);
+                }
+            }
+            if (messages.length > 0) return messages.join('\n');
+        }
+        
+        return "An unexpected error occurred. Please try again.";
+    };
+
     const login = async (username, password) => {
         try {
             const response = await api.post('/auth/login/', { username, password });
@@ -62,9 +94,10 @@ export const AuthProvider = ({ children }) => {
             return { success: false, message: "Failed to fetch user profile" };
         } catch (error) {
             console.error("Login failed:", error);
+            const errorMsg = formatError(error.response?.data);
             return {
                 success: false,
-                message: error.response?.data?.error || "Login failed"
+                message: errorMsg
             };
         }
     };
@@ -75,9 +108,10 @@ export const AuthProvider = ({ children }) => {
             return { success: true };
         } catch (error) {
             console.error("Signup failed:", error);
+            const errorMsg = formatError(error.response?.data);
             return {
                 success: false,
-                message: JSON.stringify(error.response?.data)
+                message: errorMsg
             };
         }
     };
