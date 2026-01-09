@@ -6,6 +6,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
 import { useNotification } from '../../context/NotificationContext';
 import AutomatedReminders from '../../components/student/AutomatedReminders';
+import AttendanceForecaster from '../../components/student/AttendanceForecaster';
 
 const StudentDashboard = () => {
     const [joinCode, setJoinCode] = useState('');
@@ -223,6 +224,9 @@ const StudentDashboard = () => {
 
                 {/* Right Col: Stats/History */}
                 <div className="space-y-6">
+                    {/* Forecaster Widget */}
+                    <AttendanceForecaster history={attendanceHistory} />
+
                     <h2 className="text-xl font-bold text-gray-900 dark:text-white">Recent History</h2>
                     <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-2xl p-4 space-y-4 shadow-sm">
                         {loading ? (
