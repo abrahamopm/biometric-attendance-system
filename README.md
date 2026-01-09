@@ -33,7 +33,7 @@
 
 ## 📖 **Project Overview**
 
-The **Biometric Attendance System** is a state-of-the-art solution designed to modernize educational attendance tracking. Developed by **Section 2 students** for the College of Technology and Built Environment, this project leverages **Artificial Intelligence** to authenticate students via facial recognition, ensuring **100% accuracy** and eliminating proxy attendance.
+The **Biometric Attendance System** is a state-of-the-art solution designed to modernize educational attendance tracking. Developed by **Section 2 students** for the College of Technology and Built Environment, this project leverages **Algorithms and Libraries** to authenticate students via facial recognition, ensuring **100% accuracy** and eliminating proxy attendance.
 
 ### 🏆 **Why This Project Stands Out**
 *   **Zero Proxy Tolerance**: Utilizes advanced geometric facial mapping to prevent fraudulent attendance.
@@ -50,12 +50,12 @@ The **Biometric Attendance System** is a state-of-the-art solution designed to m
 | No. | Name | ID Number | Role |
 | :--- | :--- | :--- | :--- |
 | 1. | **Abraham Nigatu** | UGR/7532/16 | *Developer* |
-| 2. | **Hermela Teklegebriel** | UGR/5174/16 | *Developer* |
+| 2. | **Hermela Teklegebriel** | UGR/5174/16 | *Figma Designer* |
 | 3. | **Manuhe Habtamu** | UGR/2808/16 | *Developer* |
 | 4. | **Naomi Mesfin** | UGR/8207/16 | *Developer* |
-| 5. | **Tsedeniya Fiseha** | UGR/9263/16 | *Developer* |
+| 5. | **Tsedeniya Fiseha** | UGR/9263/16 | *Frontend Developer* |
 | 6. | **Yordanos Teshome** | UGR/0489/16 | *Developer* |
-| 7. | **Zenebu Melaku** | UGR/6058/16 | *Developer* |
+| 7. | **Zenebu Melaku** | UGR/6058/16 | *Figma Designer* |
 
 > **Credit:** Special thanks to **Kaleab "the Gooner" Mulugeta** for the architectural guidance.
 
@@ -117,7 +117,10 @@ The system follows a modern **Client-Server Architecture**:
 *   **Node.js** (v18+)
 *   **Python** (v3.10+)
 
-### ** Installation**
+📦 Deployment Status
+The system has not been deployed to the cloud yet due to the requirement for paid features in cloud services (e.g., hosting, database scaling, and AI model serving). We plan to deploy it soon once we secure the necessary resources or sponsorships for these paid features.
+
+###  Installation
 
 1.  **Clone the Repo**:
     ```bash
