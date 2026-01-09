@@ -5,6 +5,7 @@ import api from '../../api/axios';
 import { useAuth } from '../../context/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
 import { useNotification } from '../../context/NotificationContext';
+import AutomatedReminders from '../../components/student/AutomatedReminders';
 
 const StudentDashboard = () => {
     const [joinCode, setJoinCode] = useState('');
@@ -107,6 +108,9 @@ const StudentDashboard = () => {
 
     return (
         <div className="space-y-8 min-h-full">
+            {/* Automated Reminders Widget */}
+            <AutomatedReminders enrollments={enrollments} />
+
             {/* Face Enrollment Banner */}
             {user && !user.hasFaceEnrolled && (
                 <motion.div
