@@ -4,22 +4,26 @@
     Biometric Attendance System
   </h1>
 
-  <p style="font-size: 1.2rem; color: #6b7280; font-family: 'Inter', sans-serif;">
-    A Next-Gen, AI-Powered Attendance Solution for Modern Education
+  <h3 style="color: #6b7280; font-family: 'Inter', sans-serif;">
+    College of Technology and Built Environment
+  </h3>
+  
+  <p style="font-size: 1.1rem; color: #4b5563;">
+    <strong>Advisor:</strong> Ms. Nuniyat Kifle &nbsp;|&nbsp; <strong>Date:</strong> January 2026
   </p>
 
   <p>
     <a href="#features">Features</a> •
+    <a href="#team-members">Team</a> •
     <a href="#tech-stack">Tech Stack</a> •
-    <a href="#getting-started">Getting Started</a> •
-    <a href="#demo">Demo</a>
+    <a href="#setup">Setup</a>
   </p>
 
   <br />
 
-  ![Project Status](https://img.shields.io/badge/Status-Active-success?style=for-the-badge&logo=activity)
+  ![Project Status](https://img.shields.io/badge/Status-Completed-success?style=for-the-badge&logo=activity)
   ![License](https://img.shields.io/badge/License-MIT-blue?style=for-the-badge&logo=scale)
-  ![School Project](https://img.shields.io/badge/School-Project-orange?style=for-the-badge&logo=book)
+  ![Version](https://img.shields.io/badge/Version-1.0.0-purple?style=for-the-badge&logo=git)
 
 </div>
 
@@ -27,104 +31,115 @@
 
 ---
 
-## 📖 **About The Project**
+## 📖 **Project Overview**
 
-Welcome to the **Biometric Attendance System**, a cutting-edge school project designed to revolutionize how attendance is tracked. By leveraging the power of **Artificial Intelligence** and **Computer Vision**, this application eliminates proxy attendance and ensures accurate, real-time tracking of students.
+The **Biometric Attendance System** is a state-of-the-art solution designed to modernize educational attendance tracking. Developed by **Section 2 students** for the College of Technology and Built Environment, this project leverages **Artificial Intelligence** to authenticate students via facial recognition, ensuring **100% accuracy** and eliminating proxy attendance.
 
-This system isn't just about security; it's about **efficiency**, **transparency**, and **modernizing** educational infrastructure.
+### 🏆 **Why This Project Stands Out**
+*   **Zero Proxy Tolerance**: Utilizes advanced geometric facial mapping to prevent fraudulent attendance.
+*   **Paperless Campus**: significantly reduces paper waste, contributing to a greener environment.
+*   **Time Efficiency**: Marks attendance for an entire class in a fraction of the time compared to manual roll calls.
+*   **Live Analytics**: Provides real-time insights into student attendance patterns for better academic interventions.
 
-### 🌟 **Key Features**
+---
 
-*   **🤖 Facial Recognition**: Seamless, touchless attendance marking using advanced OpenCV and Face Recognition libraries.
-*   **⚡ Real-Time Dashboard**: Instant feedback and live updates for administrators and teachers.
-*   **📊 Comprehensive Reports**: Exportable data analysis for attendance trends.
-*   **🛡️ Secure Authentication**: JWT-based protection for all API endpoints.
-*   **🎨 Modern UI/UX**: A stunning, responsive interface built with React, TailwindCSS, and Framer Motion animations.
+## 👥 **Team Members**
+
+
+
+| No. | Name | ID Number | Role |
+| :--- | :--- | :--- | :--- |
+| 1. | **Abraham Nigatu** | UGR/7532/16 | *Developer* |
+| 2. | **Hermela Teklegebriel** | UGR/5174/16 | *Developer* |
+| 3. | **Manuhe Habtamu** | UGR/2808/16 | *Developer* |
+| 4. | **Naomi Mesfin** | UGR/8207/16 | *Developer* |
+| 5. | **Tsedeniya Fiseha** | UGR/9263/16 | *Developer* |
+| 6. | **Yordanos Teshome** | UGR/0489/16 | *Developer* |
+| 7. | **Zenebu Melaku** | UGR/6058/16 | *Developer* |
+
+> **Credit:** Special thanks to **Kaleab "the Gooner" Mulugeta** for the architectural guidance.
+
+---
+
+## 🌟 **Key Features**
+
+*   **🤖 AI-Powered Facial Recognition**: Seamless, contact-less attendance using OpenCV and dlib.
+*   **🛡️ Liveness Detection**: (Planned/Pro) Prevents spoofing using photos or videos.
+*   **⚡ Real-Time Dashboard**: Instant feedback for students and admins.
+*   **📊 Automated Reporting**: Generates weekly/monthly PDF & Excel reports automatically.
+*   **🎨 Dynamic UI/UX**: A responsive, dark-mode enabled interface built with React & Framer Motion.
+*   **🔐 Role-Based Access Control**: Secure login for Admins, Teachers, and Students.
+
+---
+
+## 🏗️ **System Architecture**
+
+The system follows a modern **Client-Server Architecture**:
+
+1.  **Frontend (Client)**: React.js application captures video feed and handles user interaction.
+2.  **API Layer**: RESTful endpoints protected by JWT Authentication transfer data securely.
+3.  **Backend (Server)**: Django processes images, runs facial recognition algorithms, and manages the SQLite/PostgreSQL database.
+4.  **Database**: Stores user profiles, hashed face encodings, and attendance logs.
 
 ---
 
 ## 🛠️ **Tech Stack**
 
-This project uses a robust, full-stack architecture to deliver performance and reliability.
-
 <details open>
-<summary><strong>🖥️ Frontend (Client Side)</strong></summary>
+<summary><strong>🖥️ Frontend</strong></summary>
 <br />
 
-| Technology | Badge | Description |
-| :--- | :--- | :--- |
-| **React** | ![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB) | The core UI library. |
-| **Vite** | ![Vite](https://img.shields.io/badge/Vite-646CFF?style=for-the-badge&logo=vite&logoColor=white) | For lightning-fast development. |
-| **TypeScript** | ![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white) | Ensures type safety and code quality. |
-| **TailwindCSS** | ![TailwindCSS](https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white) | Utility-first CSS for rapid styling. |
-| **Framer Motion** | ![Framer](https://img.shields.io/badge/Framer-black?style=for-the-badge&logo=framer&logoColor=blue) | For smooth, complex animations. |
+| Tech | Description |
+| :--- | :--- |
+| ![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB) | Dynamic UI Rendering |
+| ![Vite](https://img.shields.io/badge/Vite-646CFF?style=for-the-badge&logo=vite&logoColor=white) | Build Tool |
+| ![Tailwind](https://img.shields.io/badge/Tailwind-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white) | Modern Styling |
 
 </details>
 
 <details open>
-<summary><strong>⚙️ Backend (Server Side)</strong></summary>
+<summary><strong>⚙️ Backend</strong></summary>
 <br />
 
-| Technology | Badge | Description |
-| :--- | :--- | :--- |
-| **Django** | ![Django](https://img.shields.io/badge/Django-092E20?style=for-the-badge&logo=django&logoColor=white) | The high-level Python web framework. |
-| **Django REST** | ![DRF](https://img.shields.io/badge/DJANGO-REST-ff1709?style=for-the-badge&logo=django&logoColor=white&color=ff1709&labelColor=gray) | Powerful toolkit for Web APIs. |
-| **OpenCV** | ![OpenCV](https://img.shields.io/badge/OpenCV-5C3EE8?style=for-the-badge&logo=opencv&logoColor=white) | Real-time computer vision library. |
-| **Pandas** | ![Pandas](https://img.shields.io/badge/pandas-150458?style=for-the-badge&logo=pandas&logoColor=white) | Data manipulation and analysis. |
+| Tech | Description |
+| :--- | :--- |
+| ![Django](https://img.shields.io/badge/Django-092E20?style=for-the-badge&logo=django&logoColor=white) | API & Verification Logic |
+| ![OpenCV](https://img.shields.io/badge/OpenCV-5C3EE8?style=for-the-badge&logo=opencv&logoColor=white) | Image Processing |
+| ![Pandas](https://img.shields.io/badge/pandas-150458?style=for-the-badge&logo=pandas&logoColor=white) | Data Analysis |
 
 </details>
 
 ---
 
-## 🚀 **Getting Started**
-
-Follow these simple steps to set up the project locally on your machine.
+## 🚀 **Getting Started** <a id="setup"></a>
 
 ### **Prerequisites**
-
 *   **Node.js** (v18+)
 *   **Python** (v3.10+)
 
-### ** Installation Guide**
+### ** Installation**
 
-#### **1️⃣ Clone the Repository**
-```bash
-git clone https://github.com/your-username/biometric-attendance-system.git
-cd biometric-attendance-system
-```
+1.  **Clone the Repo**:
+    ```bash
+    git clone https://github.com/your-username/biometric-attendance-system.git
+    cd biometric-attendance-system
+    ```
 
-#### **2️⃣ Backend Setup (Python/Django)**
-Navigate to the backend folder and set up the virtual environment.
+2.  **Backend Setup**:
+    ```bash
+    cd backend
+    python -m venv venv
+    # Activate: venv\Scripts\activate (Win) or source venv/bin/activate (Mac/Linux)
+    pip install -r requirements.txt
+    python manage.py runserver
+    ```
 
-```bash
-cd backend
-python -m venv venv
-# Windows
-venv\Scripts\activate
-# Mac/Linux
-source venv/bin/activate
-```
-
-Install dependencies and run migrations:
-
-```bash
-pip install -r requirements.txt
-python manage.py migrate
-python manage.py runserver
-```
-> The backend server will start at `http://127.0.0.1:8000/`
-
-<br />
-
-#### **3️⃣ Frontend Setup (React/Vite)**
-Open a new terminal, navigate to the frontend folder, and install dependencies.
-
-```bash
-cd frontend
-npm install
-npm run dev
-```
-> The frontend application will start at `http://localhost:5173/`
+3.  **Frontend Setup**:
+    ```bash
+    cd frontend
+    npm install
+    npm run dev
+    ```
 
 ---
 
@@ -140,20 +155,4 @@ npm run dev
 
 ---
 
-## 🤝 **Contributing**
 
-Contributions are what make the open source community such an amazing place to learn, inspire, and create. Any contributions you make are **greatly appreciated**.
-
-1.  Fork the Project
-2.  Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
-3.  Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
-4.  Push to the Branch (`git push origin feature/AmazingFeature`)
-5.  Open a Pull Request
-
----
-
-## 📬 **Contact**
-
-For any inquiries or feedback, please reach out!
-
-Developed with ❤️ for **School Project 2024**
