@@ -5,45 +5,19 @@ import { useAuth } from '../../context/AuthContext';
 import { useNotification } from '../../context/NotificationContext';
 import api from '../../api/axios';
 
+import ConfirmModal from '../../components/ConfirmModal';
+
 const ProfilePage: React.FC = () => {
     const { user, refreshUserProfile } = useAuth() as any;
     const { success, error: showError } = useNotification();
     const [loading, setLoading] = useState(false);
     const [passwordLoading, setPasswordLoading] = useState(false);
+    const [isResetModalOpen, setIsResetModalOpen] = useState(false);
 
-    const [formData, setFormData] = useState({
-        username: '',
-        email: '',
-        phone: '',
-    });
-
-    const [passwordData, setPasswordData] = useState({
-        old_password: '',
-        new_password: '',
-        confirm_password: '',
-    });
-
-    useEffect(() => {
-        if (user) {
-            setFormData({
-                username: user.username || '',
-                email: user.email || '',
-                phone: user.phone || '',
-            });
-        }
-    }, [user]);
-
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const { name, value } = e.target;
-        setFormData((prev) => ({ ...prev, [name]: value }));
-    };
-
-    const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const { name, value } = e.target;
-        setPasswordData((prev) => ({ ...prev, [name]: value }));
-    };
+    // ... existing form state and handlers ...
 
     const handleProfileUpdate = async (e: React.FormEvent) => {
+        // ... existing handleProfileUpdate logic ...
         e.preventDefault();
         setLoading(true);
 
@@ -63,6 +37,7 @@ const ProfilePage: React.FC = () => {
     };
 
     const handlePasswordUpdate = async (e: React.FormEvent) => {
+        // ... existing handlePasswordUpdate logic ...
         e.preventDefault();
 
         if (passwordData.new_password !== passwordData.confirm_password) {
@@ -98,10 +73,7 @@ const ProfilePage: React.FC = () => {
     };
 
     const handleFaceReset = async () => {
-        if (!confirm('Are you sure you want to reset your face data? You will need to re-enroll.')) {
-            return;
-        }
-
+        // ConfirmModal will trigger this
         try {
             await api.post('/users/reset_face/');
             await refreshUserProfile();
@@ -113,6 +85,7 @@ const ProfilePage: React.FC = () => {
 
     return (
         <div className="max-w-4xl mx-auto space-y-6">
+            {/* ... existing header and profile form ... */}
             <div>
                 <h1 className="text-3xl font-display font-bold text-gray-900">My Profile</h1>
                 <p className="text-gray-600 mt-1">Manage your account settings and preferences</p>
@@ -135,6 +108,7 @@ const ProfilePage: React.FC = () => {
                 </div>
 
                 <form onSubmit={handleProfileUpdate} className="space-y-4">
+                    {/* ... existing fields ... */}
                     {/* Username (Read-only) */}
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -243,7 +217,7 @@ const ProfilePage: React.FC = () => {
 
                         {user.hasFaceEnrolled && (
                             <button
-                                onClick={handleFaceReset}
+                                onClick={() => setIsResetModalOpen(true)}
                                 className="w-full bg-red-50 border border-red-200 hover:bg-red-100 text-red-600 px-6 py-3 rounded-lg font-bold flex items-center justify-center gap-2 transition-all"
                             >
                                 <RefreshCw className="w-5 h-5" />
@@ -261,6 +235,7 @@ const ProfilePage: React.FC = () => {
                 transition={{ delay: 0.2 }}
                 className="bg-white shadow-sm border border-gray-100 rounded-2xl p-6"
             >
+                {/* ... existing password form ... */}
                 <div className="flex items-center gap-3 mb-6">
                     <div className="p-3 bg-yellow-100 rounded-xl">
                         <Shield className="w-6 h-6 text-yellow-600" />
@@ -345,6 +320,16 @@ const ProfilePage: React.FC = () => {
                     </button>
                 </form>
             </motion.div>
+
+            <ConfirmModal
+                isOpen={isResetModalOpen}
+                onClose={() => setIsResetModalOpen(false)}
+                onConfirm={handleFaceReset}
+                title="Reset Face Data"
+                message="Are you sure you want to reset your face data? You will need to re-enroll your face to mark attendance."
+                confirmText="Reset Data"
+                isDestructive={true}
+            />
         </div>
     );
 };
