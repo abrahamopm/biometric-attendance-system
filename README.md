@@ -49,9 +49,9 @@ The **Biometric Attendance System** is a state-of-the-art solution designed to m
 
 | No. | Name | ID Number | Role |
 | :--- | :--- | :--- | :--- |
-| 1. | **Abraham Nigatu** | UGR/7532/16 | *Developer* |
+| 1. | **Abraham Nigatu** | UGR/7532/16 | *Backend Developer* |
 | 2. | **Hermela Teklegebriel** | UGR/5174/16 | *Figma Designer* |
-| 3. | **Manuhe Habtamu** | UGR/2808/16 | *Developer* |
+| 3. | **Manuhe Habtamu** | UGR/2808/16 | *Backend Developer* |
 | 4. | **Naomi Mesfin** | UGR/8207/16 | *Developer* |
 | 5. | **Tsedeniya Fiseha** | UGR/9263/16 | *Frontend Developer* |
 | 6. | **Yordanos Teshome** | UGR/0489/16 | *Developer* |
