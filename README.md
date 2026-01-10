@@ -1,20 +1,7 @@
 # Biometric Faceprint Attendance System
 
-A secure, role-based biometric attendance tracking system built with **Django** and **Streamlit**.  
-Allows hosts and attendees to track attendance using facial recognition with high security and privacy.
-
----
-
-## Table of Contents
-
-- [Features](#features)
-- [Technology Stack](#technology-stack)
-- [Setup Instructions](#setup-instructions)
-- [Usage](#usage)
-- [Folder Structure](#folder-structure)
-- [Security Design](#security-design)
-- [Contributing](#contributing)
-- [License](#license)
+This system implements a secure, role-based biometric attendance tracking system using Django and Streamlit.  
+It allows hosts to manage attendance and attendees to mark attendance via face recognition in real-time.
 
 ---
 
@@ -35,80 +22,73 @@ Allows hosts and attendees to track attendance using facial recognition with hig
 - **Frontend**: Streamlit
 - **Face Recognition**: InsightFace (ArcFace) & OpenCV
 - **Database**: PostgreSQL (configured for SQLite for demo)
-- **Security**: Fernet Encryption for biometric data, JWT for API Auth
+- **Security**: Fernet Encryption for biometric data, JWT for API Auth.
 
 ---
 
 ## Setup Instructions
 
-### 1. Clone the Repository
+### 1. Installation
+
+Install the required dependencies:
 
 ```bash
-git clone https://github.com/abrahamopm/biometric-attendance-system.git
-cd biometric-attendance-system
-2. Create and Activate Virtual Environment
-bash
-Copy code
-python -m venv venv
-# Windows
-venv\Scripts\activate
-# Mac/Linux
-source venv/bin/activate
-3. Install Dependencies
-bash
-Copy code
 pip install -r requirements.txt
-4. Database Initialization
+2. Database Initialization
+Navigate to the backend folder and run migrations:
+
 bash
 Copy code
 cd backend
 python manage.py makemigrations
 python manage.py migrate
-5. Start Backend Server
+3. Start the Backend Server
 bash
 Copy code
 python manage.py runserver
-6. Start Frontend (Streamlit)
-In a new terminal:
+4. Start the Frontend (Streamlit)
+In a new terminal, navigate to the frontend folder:
 
 bash
 Copy code
-cd frontend
 streamlit run app.py
-7. Access the Application
-Open your browser and go to http://localhost:8501 for Streamlit frontend.
-Backend API is accessible at http://127.0.0.1:8000.
+5. Access the Application
+Open your browser and go to http://localhost:8501/ (Streamlit default port)
 
-Usage
-Register new users (Attendees or Hosts)
+Log in as Host or Attendee
 
-Hosts can enroll facial data for attendees
+Enroll new attendees or mark attendance using webcam
 
-Live attendance tracking via webcam
+Usage Examples
+Hosts can view attendance records and export reports.
 
-Export attendance reports (CSV / PDF)
+Attendees can mark attendance by showing their face to the webcam.
 
-Hosts can manually adjust attendance
+Manual override allows adjusting records if recognition fails.
+
+Tip: Ensure good lighting for accurate face recognition.
 
 Folder Structure
 perl
 Copy code
 /biometric-attendance-system
 │
-├── backend/                # Django backend
+├── backend/                  # Django backend
 │   ├── manage.py
+│   ├── attendance/           # Django app for attendance
 │   └── ...
-├── frontend/               # Streamlit frontend
+├── frontend/                 # Streamlit frontend
 │   └── app.py
-├── dataset/                # Temporary facial images for enrollment
-├── requirements.txt
-└── README.md
+├── requirements.txt          # Python dependencies
+├── README.md                 # Project documentation
+└── dataset/                  # Temporary storage for face images (deleted after processing)
 Security Design
-Facial embeddings stored as encrypted binary blobs (Fernet encryption)
+Facial embeddings are stored as encrypted binary blobs.
 
-No raw images stored on the server
+No raw facial images are stored on the server.
 
-JWT tokens handle authentication and session management
+JWT tokens handle session management.
 
-Audit logs track all critical actions (Login, Enrollment, Attendance)
+Audit logs track all critical actions (Login, Enrollment, Attendance).
+
 ```
